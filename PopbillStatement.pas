@@ -233,6 +233,8 @@ type
                 function GetPopUpURL(CorpNum: string; ItemCode:Integer; MgtKey : String; UserID: String) : string;
                 //인쇄URL
                 function GetPrintURL(CorpNum: string; ItemCode:Integer; MgtKey : String; UserID: String) : string;
+                //수신자인쇄URL
+                function GetEPrintURL(CorpNum: string; ItemCode:Integer; MgtKey : String; UserID: String) : string;
                 //다량인쇄URL
                 function GetMassPrintURL(CorpNum: string; ItemCode:Integer; MgtKeyList: Array Of String; UserID: String) : string;
 
@@ -969,6 +971,21 @@ begin
         end;
         
         responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey +'?TG=PRINT',CorpNum,UserID);
+
+        result := getJSonString(responseJson,'url');
+end;
+
+function TStatementService.GetEPrintURL(CorpNum: string; ItemCode:Integer; MgtKey : String;UserID : String) : string;
+var
+        responseJson : String;
+begin
+        if MgtKey = '' then
+        begin
+                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                Exit;
+        end;
+        
+        responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey +'?TG=EPRINT',CorpNum,UserID);
 
         result := getJSonString(responseJson,'url');
 end;
