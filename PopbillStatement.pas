@@ -365,6 +365,7 @@ begin
         requestJson := requestJson + '"receiverDeptName":"'+ EscapeString(Statement.ReceiverDeptName) +'",';
         requestJson := requestJson + '"receiverTEL":"'+ EscapeString(Statement.ReceiverTEL) +'",';
         requestJson := requestJson + '"receiverHP":"'+ EscapeString(Statement.ReceiverHP) +'",';
+        requestJson := requestJson + '"receiverFAX":"'+ EscapeString(Statement.ReceiverFAX) +'",';
         requestJson := requestJson + '"receiverEmail":"'+ EscapeString(Statement.ReceiverEmail) +'",';
 
         requestJson := requestJson + '"taxTotal":"'+ EscapeString(Statement.TaxTotal) +'",';
