@@ -29,7 +29,7 @@ unit PopbillStatement;
 interface
 
 uses
-        TypInfo,SysUtils,Classes,synautil,
+        TypInfo,SysUtils,Classes,
         Popbill,
         Linkhub;
 type
@@ -249,6 +249,34 @@ type
 
 
 implementation
+
+function PosFrom(const SubStr, Value: String; From: integer): integer;
+var
+  ls,lv: integer;
+begin
+  Result := 0;
+  ls := Length(SubStr);
+  lv := Length(Value);
+  if (ls = 0) or (lv = 0) then
+    Exit;
+  if From < 1 then
+    From := 1;
+  while (ls + from - 1) <= (lv) do
+  begin
+    {$IFNDEF CIL}
+    if CompareMem(@SubStr[1],@Value[from],ls) then
+    {$ELSE}
+    if SubStr = copy(Value, from, ls) then
+    {$ENDIF}
+    begin
+      result := from;
+      break;
+    end
+    else
+      inc(from);
+  end;
+end;
+
 function getJsonFromJson(Data : String; Key: String) : String;
 var
         StartPos : integer;
@@ -314,7 +342,7 @@ begin
         except
                 on E : EPopbillException do
                 begin
-                        if E.code = -11000005 then begin
+                        if E.code = -12000004 then begin
                                 result := false;
                                 Exit;
                         end;
