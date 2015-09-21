@@ -29,7 +29,7 @@ unit PopbillStatement;
 interface
 
 uses
-        TypInfo,SysUtils,Classes,
+        TypInfo,SysUtils,Classes,Dialogs,
         Popbill,
         Linkhub;
 type
@@ -185,7 +185,7 @@ type
                 
                 function jsonToTStatementInfo(json : String) : TStatementInfo;
                 function jsonToTStatement(json : String) : TStatement;
-                function TStatementTojson(Statement : TStatement) : String;
+                function TStatementTojson(Statement : TStatement; Memo : String) : String;
                 
         public
                 constructor Create(LinkID : String; SecretKey : String);
@@ -194,6 +194,9 @@ type
 
                 //관리번호 사용여부 확인
                 function CheckMgtKeyInUse(CorpNum : String; ItemCode:Integer; MgtKey : String) : boolean;
+
+                //즉시발행 
+                function RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String) : TResponse;
 
                 //임시저장.
                 function Register(CorpNum : String; Statement : TStatement; UserID : String) : TResponse;
@@ -337,7 +340,7 @@ begin
                 Exit;
         end;
 
-        try
+        try                                                       
                 responseJson := httpget('/Statement/'+ InttoStr(ItemCode) + '/'+MgtKey , CorpNum,'');
         except
                 on E : EPopbillException do
@@ -354,14 +357,14 @@ begin
         result:= statementInfo.ItemKey <> '';
 end;
 
-function TStatementService.TStatementTojson(Statement : TStatement) : String;
+function TStatementService.TStatementTojson(Statement : TStatement; Memo : String) : String;
 var
         requestJson : string;
         i : integer;
 begin
        requestJson := '{';
 
-       
+        requestJson := requestJson + '"memo":"'+ Memo +'",';
         requestJson := requestJson + '"itemCode":"'+ EscapeString(IntToStr(Statement.ItemCode)) +'",';
         requestJson := requestJson + '"mgtKey":"'+ EscapeString(Statement.MgtKey) +'",';
         requestJson := requestJson + '"writeDate":"'+ EscapeString(Statement.WriteDate) +'",';
@@ -477,12 +480,26 @@ begin
         result := requestJson;
 end;
 
+
+function TStatementService.RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String) : TResponse;
+var
+        requestJson : string;
+        responseJson : string;
+begin
+        requestJson := TStatementTojson(Statement, Memo);
+
+        responseJson := httppost('/Statement',CorpNum,UserID,requestJson,'ISSUE');
+
+        result.code := getJSonInteger(responseJson,'code');
+        result.message := getJSonString(responseJson,'message');
+end;
+
 function TStatementService.Register(CorpNum : String; Statement : TStatement; UserID : String) : TResponse;
 var
         requestJson : string;
         responseJson : string;
 begin
-        requestJson := TStatementTojson(Statement);
+        requestJson := TStatementTojson(Statement,'');
 
         responseJson := httppost('/Statement',CorpNum,UserID,requestJson);
 
@@ -502,7 +519,7 @@ begin
                 Exit;
         end;
         
-        requestJson := TStatementTojson(Statement);
+        requestJson := TStatementTojson(Statement,'');
 
         responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
                                 CorpNum,UserID,requestJson,'PATCH');
