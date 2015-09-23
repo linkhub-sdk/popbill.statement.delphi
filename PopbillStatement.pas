@@ -185,7 +185,7 @@ type
                 
                 function jsonToTStatementInfo(json : String) : TStatementInfo;
                 function jsonToTStatement(json : String) : TStatement;
-                function TStatementTojson(Statement : TStatement; Memo : String) : String;
+                function TStatementTojson(Statement : TStatement; Memo : String; sendNum : String; receiveNum: String) : String;
                 
         public
                 constructor Create(LinkID : String; SecretKey : String);
@@ -216,6 +216,8 @@ type
                 function SendSMS(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; Contents : String; UserID : String) : TResponse;
                 // 팩스 재전송.
                 function SendFAX(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; UserID : String) : TResponse;
+                // 팩스 발행
+                function IssueFAX(CorpNum : String; Statement : TStatement; sendNum : String; receiveNum : String; UserID : String) : String;
 
                 //세금계산서 요약정보 및 상태정보 확인.
                 function GetInfo(CorpNum : string; ItemCode:Integer; MgtKey: string) : TStatementInfo;
@@ -357,12 +359,18 @@ begin
         result:= statementInfo.ItemKey <> '';
 end;
 
-function TStatementService.TStatementTojson(Statement : TStatement; Memo : String) : String;
+function TStatementService.TStatementTojson(Statement : TStatement; Memo : String; sendNum : String; receiveNum :String) : String;
 var
         requestJson : string;
         i : integer;
 begin
-       requestJson := '{';
+        requestJson := '{';
+
+        if sendNum <> '' then
+        requestJson := requestJson + '"sendNum":"'+sendNum+'",';
+
+        if receiveNum <> '' then
+        requestJson := requestJson + '"receiveNum":"'+receiveNum+'",';
 
         requestJson := requestJson + '"memo":"'+ Memo +'",';
         requestJson := requestJson + '"itemCode":"'+ EscapeString(IntToStr(Statement.ItemCode)) +'",';
@@ -480,13 +488,26 @@ begin
         result := requestJson;
 end;
 
+// 팩스 발행
+function TStatementService.IssueFAX(CorpNum : String; Statement : TStatement; sendNum:String; receiveNum: String; UserID : String) : String;
+var
+        requestJson : string;
+        responseJson : string;
+begin
+        requestJson := TStatementTojson(Statement,'',sendNum,receiveNum);
+
+        responseJson := httppost('/Statement',CorpNum,UserID,requestJson,'FAX');
+
+        result := getJSonString(responseJson,'receiptNum');
+
+end;
 
 function TStatementService.RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String) : TResponse;
 var
         requestJson : string;
         responseJson : string;
 begin
-        requestJson := TStatementTojson(Statement, Memo);
+        requestJson := TStatementTojson(Statement, Memo,'','');
 
         responseJson := httppost('/Statement',CorpNum,UserID,requestJson,'ISSUE');
 
@@ -499,7 +520,7 @@ var
         requestJson : string;
         responseJson : string;
 begin
-        requestJson := TStatementTojson(Statement,'');
+        requestJson := TStatementTojson(Statement,'','','');
 
         responseJson := httppost('/Statement',CorpNum,UserID,requestJson);
 
@@ -519,7 +540,7 @@ begin
                 Exit;
         end;
         
-        requestJson := TStatementTojson(Statement,'');
+        requestJson := TStatementTojson(Statement,'','','');
 
         responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
                                 CorpNum,UserID,requestJson,'PATCH');
