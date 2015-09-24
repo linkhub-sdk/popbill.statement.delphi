@@ -216,8 +216,8 @@ type
                 function SendSMS(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; Contents : String; UserID : String) : TResponse;
                 // 팩스 재전송.
                 function SendFAX(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; UserID : String) : TResponse;
-                // 팩스 발행
-                function IssueFAX(CorpNum : String; Statement : TStatement; sendNum : String; receiveNum : String; UserID : String) : String;
+                // 팩스 사전 전송
+                function FAXSend(CorpNum : String; Statement : TStatement; sendNum : String; receiveNum : String; UserID : String) : String;
 
                 //세금계산서 요약정보 및 상태정보 확인.
                 function GetInfo(CorpNum : string; ItemCode:Integer; MgtKey: string) : TStatementInfo;
@@ -488,8 +488,7 @@ begin
         result := requestJson;
 end;
 
-// 팩스 발행
-function TStatementService.IssueFAX(CorpNum : String; Statement : TStatement; sendNum:String; receiveNum: String; UserID : String) : String;
+function TStatementService.FAXSend(CorpNum : String; Statement : TStatement; sendNum:String; receiveNum: String; UserID : String) : String;
 var
         requestJson : string;
         responseJson : string;
