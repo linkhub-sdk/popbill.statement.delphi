@@ -193,7 +193,7 @@ type
                 function GetURL(CorpNum : String; UserID : String; TOGO : String) : String;
 
                 //관리번호 사용여부 확인
-                function CheckMgtKeyInUse(CorpNum : String; ItemCode:Integer; MgtKey : String) : boolean;
+                function CheckMgtKey(CorpNum : String; ItemCode:Integer; MgtKey : String) : boolean;
 
                 //즉시발행 
                 function RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String) : TResponse;
@@ -331,7 +331,7 @@ begin
         result := getJSonString(responseJson,'url');
 end;
 
-function TStatementService.CheckMgtKeyInUse(CorpNum : String; ItemCode:Integer; MgtKey : String): boolean;
+function TStatementService.CheckMgtKey(CorpNum : String; ItemCode:Integer; MgtKey : String): boolean;
 var
         responseJson : string;
         statementInfo : TStatementInfo;
