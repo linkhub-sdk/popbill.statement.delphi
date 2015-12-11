@@ -219,12 +219,12 @@ type
                 // 팩스 사전 전송
                 function FAXSend(CorpNum : String; Statement : TStatement; sendNum : String; receiveNum : String; UserID : String) : String;
 
-                //세금계산서 요약정보 및 상태정보 확인.
+                //전자명세서 요약정보 및 상태정보 확인.
                 function GetInfo(CorpNum : string; ItemCode:Integer; MgtKey: string) : TStatementInfo;
-                //세금계산서 상세정보 확인
+                //전자명세서 상세정보 확인
                 function GetDetailInfo(CorpNum : string; ItemCode:Integer; MgtKey: string) : TStatement;
 
-                //세금계산서 요약정보 및 상태 다량 확인.
+                //전자명세서 요약정보 및 상태 다량 확인.
                 function GetInfos(CorpNum : string; ItemCode:Integer; MgtKeyList: Array Of String) : TStatementInfoList;
                 //문서이력 확인.
                 function GetLogs(CorpNum : string; ItemCode:Integer; MgtKey: string) : TStatementLogList;
@@ -247,7 +247,7 @@ type
                 function GetMailURL(CorpNum: string; ItemCode:Integer; MgtKey : String; UserID: String) : string;
 
 
-                //회원별 세금계산서 발행단가 확인.
+                //회원별 전자명세서 발행단가 확인.
                 function GetUnitCost(CorpNum : String; ItemCode:Integer) : Single;
 
         end;
@@ -498,7 +498,6 @@ begin
         responseJson := httppost('/Statement',CorpNum,UserID,requestJson,'FAX');
 
         result := getJSonString(responseJson,'receiptNum');
-
 end;
 
 function TStatementService.RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String) : TResponse;
@@ -506,12 +505,24 @@ var
         requestJson : string;
         responseJson : string;
 begin
-        requestJson := TStatementTojson(Statement, Memo,'','');
+        try
+                requestJson := TStatementTojson(Statement, Memo,'','');
 
-        responseJson := httppost('/Statement',CorpNum,UserID,requestJson,'ISSUE');
+                responseJson := httppost('/Statement',CorpNum,UserID,requestJson,'ISSUE');
 
-        result.code := getJSonInteger(responseJson,'code');
-        result.message := getJSonString(responseJson,'message');
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.Message);
+                        end;
+
+                        result.code := le.code;
+                        result.message := le.Message;
+                end;
+        end;
 end;
 
 function TStatementService.Register(CorpNum : String; Statement : TStatement; UserID : String) : TResponse;
@@ -519,13 +530,24 @@ var
         requestJson : string;
         responseJson : string;
 begin
-        requestJson := TStatementTojson(Statement,'','','');
+        try
+                requestJson := TStatementTojson(Statement,'','','');
 
-        responseJson := httppost('/Statement',CorpNum,UserID,requestJson);
+                responseJson := httppost('/Statement',CorpNum,UserID,requestJson);
 
-        result.code := getJSonInteger(responseJson,'code');
-        result.message := getJSonString(responseJson,'message');
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.Message);
+                        end;
 
+                        result.code := le.code;
+                        result.message := le.Message;
+                end;
+        end;
 end;
 
 function TStatementService.Update(CorpNum : String; ItemCode:Integer; MgtKey : String; Statement : TStatement; UserID : String) : TResponse;
@@ -535,17 +557,37 @@ var
 begin
         if MgtKey = '' then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end;
+
+                result.code := -99999999;
+                result.message := '관리번호가 입력되지 않았습니다.';
                 Exit;
         end;
         
-        requestJson := TStatementTojson(Statement,'','','');
+        try
+                requestJson := TStatementTojson(Statement,'','','');
 
-        responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
-                                CorpNum,UserID,requestJson,'PATCH');
+                responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
+                                        CorpNum,UserID,requestJson,'PATCH');
 
-        result.code := getJSonInteger(responseJson,'code');
-        result.message := getJSonString(responseJson,'message');
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.Message);
+                        end;
+
+                        result.code := le.code;
+                        result.message := le.Message;
+                end;
+        end;
 
 end;
 
@@ -556,17 +598,37 @@ var
 begin
         if MgtKey = '' then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end;
+                
+                result.code := -99999999;
+                result.message := '관리번호가 입력되지 않았습니다.';
                 Exit;
         end;
 
-        requestJson := '{"memo":"'+EscapeString(Memo)+'"}';
+        try
+                requestJson := '{"memo":"'+EscapeString(Memo)+'"}';
 
-        responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
-                                CorpNum,UserID,requestJson,'ISSUE');
+                responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
+                                        CorpNum,UserID,requestJson,'ISSUE');
 
-        result.code := getJSonInteger(responseJson,'code');
-        result.message := getJSonString(responseJson,'message');
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.Message);
+                        end;
+                        
+                        result.code := le.code;
+                        result.message := le.Message;
+                end;
+        end;
+
 end;
 
 function TStatementService.Cancel(CorpNum : String; ItemCode:Integer; MgtKey : String; Memo : String; UserID : String) : TResponse;
@@ -576,16 +638,37 @@ var
 begin
         if MgtKey = '' then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end;
+                
+                result.code := -99999999;
+                result.message := '관리번호가 입력되지 않았습니다.';
                 Exit;
         end;
-        requestJson := '{"memo":"'+EscapeString(Memo)+'"}';
 
-        responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
-                                CorpNum,UserID,requestJson,'CANCEL');
+        try
+                requestJson := '{"memo":"'+EscapeString(Memo)+'"}';
 
-        result.code := getJSonInteger(responseJson,'code');
-        result.message := getJSonString(responseJson,'message');
+                responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
+                                        CorpNum,UserID,requestJson,'CANCEL');
+
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+                
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.Message);
+                        end;
+
+                        result.code := le.code;
+                        result.message := le.Message;
+                end;
+        end;
 end;
 
 function TStatementService.SendEmail(CorpNum : String; ItemCode:Integer; MgtKey :String; Receiver:String; UserID : String) : TResponse;
@@ -595,16 +678,36 @@ var
 begin
         if MgtKey = '' then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
-                Exit;                                                             
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end;
+                
+                result.code := -99999999;
+                result.message := '관리번호가 입력되지 않았습니다.';
+                Exit;
         end;
-        requestJson := '{"receiver":"'+EscapeString(Receiver)+'"}';
+        
+        try
+                requestJson := '{"receiver":"'+EscapeString(Receiver)+'"}';
 
-        responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
-                                CorpNum,UserID,requestJson,'EMAIL');
+                responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
+                                        CorpNum,UserID,requestJson,'EMAIL');
 
-        result.code := getJSonInteger(responseJson,'code');
-        result.message := getJSonString(responseJson,'message');
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.Message);
+                        end;
+
+                        result.code := le.code;
+                        result.message := le.Message;
+                end;
+        end;
 end;
 
 function TStatementService.SendSMS(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; Contents : String; UserID : String) : TResponse;
@@ -614,16 +717,37 @@ var
 begin
         if MgtKey = '' then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end;
+                
+                result.code := -99999999;
+                result.message := '관리번호가 입력되지 않았습니다.';
                 Exit;
         end;
-        requestJson := '{"sender":"'+EscapeString(Sender)+'","receiver":"'+EscapeString(Receiver)+'","contents":"'+EscapeString(Contents)+'"}';
+        
+        try
+                requestJson := '{"sender":"'+EscapeString(Sender)+'","receiver":"'+EscapeString(Receiver)+'","contents":"'+EscapeString(Contents)+'"}';
 
-        responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
-                                CorpNum,UserID,requestJson,'SMS');
+                responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
+                                        CorpNum,UserID,requestJson,'SMS');
 
-        result.code := getJSonInteger(responseJson,'code');
-        result.message := getJSonString(responseJson,'message');
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.Message);
+                        end;
+
+                        result.code := le.code;
+                        result.message := le.Message;
+                end;
+        end;
+
 end;
 
 function TStatementService.SendFAX(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; UserID : String) : TResponse;
@@ -633,16 +757,36 @@ var
 begin
         if MgtKey = '' then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end;
+                
+                result.code := -99999999;
+                result.message := '관리번호가 입력되지 않았습니다.';
                 Exit;
         end;
-        requestJson := '{"sender":"'+EscapeString(Sender)+'","receiver":"'+EscapeString(Receiver)+'"}';
 
-        responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
-                                CorpNum,UserID,requestJson,'FAX');
+        try
+                requestJson := '{"sender":"'+EscapeString(Sender)+'","receiver":"'+EscapeString(Receiver)+'"}';
 
-        result.code := getJSonInteger(responseJson,'code');
-        result.message := getJSonString(responseJson,'message');
+                responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
+                                        CorpNum,UserID,requestJson,'FAX');
+
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.Message);
+                        end;
+
+                        result.code := le.code;
+                        result.message := le.Message;
+                end;
+        end;
 end;
 
 
@@ -852,8 +996,7 @@ begin
         end;
 
         responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey + '/Logs' ,
-                                 CorpNum,
-                                 '');
+                                 CorpNum,'');
 
         try
                 jSons := ParseJsonList(responseJson);
@@ -926,13 +1069,33 @@ var
 begin
         if MgtKey = '' then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end;
+                
+                result.code := -99999999;
+                result.message := '관리번호가 입력되지 않았습니다.';
                 Exit;
         end;
-        responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,CorpNum,UserID,'','DELETE');
+        
+        try
+                responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,CorpNum,UserID,'','DELETE');
 
-        result.code := getJSonInteger(responseJson,'code');
-        result.message := getJSonString(responseJson,'message');
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.Message);
+                        end;
+
+                        result.code := le.code;
+                        result.message := le.Message;
+                end;
+        end;
 end;
 
 function TStatementService.AttachFile(CorpNum : String; ItemCode:Integer; MgtKey : String; FilePath : String; UserID : String) : TResponse;
@@ -941,24 +1104,42 @@ var
         fileName : string;
         fileData : TFileStream;
 begin
-
-       if MgtKey = '' then
-       begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+        if MgtKey = '' then
+        begin
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end;
+                
+                result.code := -99999999;
+                result.message := '관리번호가 입력되지 않았습니다.';
                 Exit;
-       end;
+        end;
 
        fileName := ExtractFileName(FilePath);
        fileData := TFileStream.Create(FilePath,fmOpenRead);
 
        try
-                responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey + '/Files',CorpNum,UserID,'Filedata',fileName,fileData);
+                try
+                        responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey + '/Files',CorpNum,UserID,'Filedata',fileName,fileData);
+                        result.code := getJSonInteger(responseJson,'code');
+                        result.message := getJSonString(responseJson,'message');
+                except
+                        on le : EPopbillException do begin
+                                if FIsThrowException then
+                                begin
+                                        raise EPopbillException.Create(le.code,le.Message);
+                                end;
+
+                                result.code := le.code;
+                                result.message := le.Message;
+                        end;
+                end;
+
        finally
         fileData.Free;
        end;
-       result.code := getJSonInteger(responseJson,'code');
-       result.message := getJSonString(responseJson,'message');
-
 end;
 
 function TStatementService.GetFiles(CorpNum: String; ItemCode:Integer; MgtKey : String) : TAttachedFileList;
@@ -995,20 +1176,46 @@ var
 begin
         if MgtKey = '' then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end;
+                
+                result.code := -99999999;
+                result.message := '관리번호가 입력되지 않았습니다.';
                 Exit;
         end;
 
         if FileID = '' then
         begin
-                raise EPopbillException.Create(-99999999,'파일 아이디가 입력되지 않았습니다.');
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'파일 아이디가 입력되지 않았습니다.');
+                        Exit;
+                end;
+
+                result.code := -99999999;
+                result.message := '파일 아이디가 입력되지 않았습니다.';
                 Exit;
         end;
 
-        responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey + '/Files/' + FileID,CorpNum,UserID,'','DELETE');
+        try
+                responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey + '/Files/' + FileID,CorpNum,UserID,'','DELETE');
 
-        result.code := getJSonInteger(responseJson,'code');
-        result.message := getJSonString(responseJson,'message');
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.Message);
+                        end;
+
+                        result.code := le.code;
+                        result.message := le.Message;
+                end;
+        end;
 end;
 
 function TStatementService.GetPopUpURL(CorpNum: string; ItemCode:Integer; MgtKey : String;UserID : String) : string;
