@@ -299,7 +299,7 @@ begin
                 StartPos := StartPos  + Length('"' + Key + '":');
                 if Copy(Data,StartPos,1) = '"' then StartPos := StartPos + 1;
 
-                EndPos := PosFrom('}',Data,StartPos);
+                EndPos :=skiptoSquareBracket(Data,StartPos);
                 if EndPos = 0 then Raise EPopbillException.Create(-99999999,'malformed json');
 
                 if StartPos = EndPos then begin
