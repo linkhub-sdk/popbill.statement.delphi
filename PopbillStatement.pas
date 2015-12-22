@@ -29,7 +29,7 @@ unit PopbillStatement;
 interface
 
 uses
-        TypInfo,SysUtils,Classes,Dialogs,
+        TypInfo,SysUtils,Classes,
         Popbill,
         Linkhub;
 type
@@ -154,6 +154,17 @@ type
 
         TStatementInfoList = Array of TStatementInfo;
 
+        TStatementSearchList = class
+        public
+                code                    : Integer;
+                total                   : Integer;
+                perPage                 : Integer;
+                pageNum                 : Integer;
+                pageCount               : Integer;
+                message                 : String;
+                list                    : TStatementInfoList;
+        end;
+
         TStatementLog = class
         public
                 docLogType      : Integer;
@@ -218,6 +229,9 @@ type
                 function SendFAX(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; UserID : String) : TResponse;
                 // 팩스 사전 전송
                 function FAXSend(CorpNum : String; Statement : TStatement; sendNum : String; receiveNum : String; UserID : String) : String;
+
+                // 전자명세서 목록조회
+                function Search(CorpNum : String; DType:String; SDate:String; EDate:String; State:Array Of String; ItemCode:Array Of Integer; Page:Integer; PerPage: Integer) : TStatementSearchList;
 
                 //전자명세서 요약정보 및 상태정보 확인.
                 function GetInfo(CorpNum : string; ItemCode:Integer; MgtKey: string) : TStatementInfo;
@@ -1021,6 +1035,74 @@ begin
         end;
         
         
+end;
+
+function TStatementService.Search(CorpNum : String; DType:String; SDate:String; EDate:String; State:Array Of String; ItemCode:Array Of Integer; Page:Integer; PerPage: Integer) : TStatementSearchList;
+var
+        responseJson : String;
+        uri : String;
+        StateList : String;
+        ItemCodeList : String;
+        i : integer;
+        jSons : ArrayOfString;
+
+begin
+
+        for i := 0 to High(State) do
+        begin
+                if State[i] <> '' Then
+                begin
+                        if i = High(State) Then
+                        begin
+                                StateList := StateList + State[i];
+                        end
+                        else begin
+                                StateList := StateList + State[i] +',';
+                        end;
+                end
+        end;
+
+        for i := 0 to High(ItemCode) do
+        begin
+                if ItemCode[i] > 0 Then
+                begin
+                        if i = High(ItemCode) Then
+                        begin
+                                ItemCodeList := ItemCodeList + IntToStr(ItemCode[i]);
+                        end
+                        else begin
+                                ItemCodeList := ItemCodeList + IntToStr(ItemCode[i]) +',';
+                        end;
+                end
+        end;
+
+        uri := '/Statement/Search?DType='+DType+'&&SDate='+SDate+'&&EDate='+EDate;
+        uri := uri + '&&State='+StateList + '&&ItemCode='+ItemCodeList;
+        uri := uri + '&&Page='+IntToStr(Page)+'&&PerPage='+IntToStr(PerPage);
+        
+        responseJson := httpget(uri, CorpNum,'');
+        
+        result := TStatementSearchList.Create;
+        
+        result.code             := getJSonInteger(responseJson,'code');
+        result.total            := getJSonInteger(responseJson,'total');
+        result.perPage          := getJSonInteger(responseJson,'perPage');
+        result.pageNum          := getJSonInteger(responseJson,'pageNum');
+        result.pageCount        := getJSonInteger(responseJson,'pageCount');
+        result.message          := getJSonString(responseJson,'message');
+
+        try
+
+                jSons := getJSonList(responseJson,'list');
+                SetLength(result.list, Length(jSons));
+                for i:=0 to Length(jSons)-1 do
+                begin
+                        result.list[i] := jsonToTStatementInfo(jSons[i]);
+                end;
+        except on E:Exception do
+                raise EPopbillException.Create(-99999999,'결과처리 실패.[Malformed Json]');
+        end;
+
 end;
 
 function TStatementService.getInfos(CorpNum : string; ItemCode:Integer; MgtKeyList: Array Of String) : TStatementInfoList;
