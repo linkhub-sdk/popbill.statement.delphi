@@ -264,6 +264,12 @@ type
                 //회원별 전자명세서 발행단가 확인.
                 function GetUnitCost(CorpNum : String; ItemCode:Integer) : Single;
 
+                // 다른 전자명세서 첨부
+                function AttachStatement(CorpNum : String; ItemCode:Integer; MgtKey:String; SubItemCode :Integer; SubMgtKey :String) : TResponse;
+
+                // 다른 전자명세서 해제
+                function DetachStatement(CorpNum : String; ItemCode:Integer; MgtKey:String; SubItemCode :Integer; SubMgtKey :String) : TResponse;
+
         end;
 
 
@@ -1397,6 +1403,60 @@ begin
         responseJson := httpget('/Statement/'+IntToStr(ItemCode)+'?cfg=UNITCOST',CorpNum,'');
 
         result := strToFloat(getJSonString( responseJson,'unitCost'));
+
+end;
+
+function TStatementService.AttachStatement(CorpNum : String; ItemCode:Integer; MgtKey:String; SubItemCode :Integer; SubMgtKey :String) : TResponse;
+var
+        requestJson : string;
+        responseJson : string;
+begin
+
+        try
+                requestJson := '{"ItemCode":"'+EscapeString(IntToSTr(SubItemCode))+'","MgtKey":"'+EscapeString(SubMgtKey)+'"}';
+
+                responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey+'/AttachStmt',CorpNum,'',requestJson,'');
+
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.Message);
+                        end;
+                        
+                        result.code := le.code;
+                        result.message := le.Message;
+                end;
+        end;
+
+end;
+
+function TStatementService.DetachStatement(CorpNum : String; ItemCode:Integer; MgtKey:String; SubItemCode :Integer; SubMgtKey :String) : TResponse;
+var
+        requestJson : string;
+        responseJson : string;
+begin
+
+        try
+                requestJson := '{"ItemCode":"'+EscapeString(IntToSTr(SubItemCode))+'","MgtKey":"'+EscapeString(SubMgtKey)+'"}';
+
+                responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey+'/DetachStmt',CorpNum,'',requestJson,'');
+
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.Message);
+                        end;
+                        
+                        result.code := le.code;
+                        result.message := le.Message;
+                end;
+        end;
 
 end;
 
