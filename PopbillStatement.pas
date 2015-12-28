@@ -231,7 +231,7 @@ type
                 function FAXSend(CorpNum : String; Statement : TStatement; sendNum : String; receiveNum : String; UserID : String) : String;
 
                 // 전자명세서 목록조회
-                function Search(CorpNum : String; DType:String; SDate:String; EDate:String; State:Array Of String; ItemCode:Array Of Integer; Page:Integer; PerPage: Integer) : TStatementSearchList;
+                function Search(CorpNum : String; DType:String; SDate:String; EDate:String; State:Array Of String; ItemCode:Array Of Integer; Page:Integer; PerPage: Integer; Order : String) : TStatementSearchList;
 
                 //전자명세서 요약정보 및 상태정보 확인.
                 function GetInfo(CorpNum : string; ItemCode:Integer; MgtKey: string) : TStatementInfo;
@@ -1043,7 +1043,7 @@ begin
         
 end;
 
-function TStatementService.Search(CorpNum : String; DType:String; SDate:String; EDate:String; State:Array Of String; ItemCode:Array Of Integer; Page:Integer; PerPage: Integer) : TStatementSearchList;
+function TStatementService.Search(CorpNum : String; DType:String; SDate:String; EDate:String; State:Array Of String; ItemCode:Array Of Integer; Page:Integer; PerPage: Integer; Order : String) : TStatementSearchList;
 var
         responseJson : String;
         uri : String;
@@ -1085,7 +1085,8 @@ begin
         uri := '/Statement/Search?DType='+DType+'&&SDate='+SDate+'&&EDate='+EDate;
         uri := uri + '&&State='+StateList + '&&ItemCode='+ItemCodeList;
         uri := uri + '&&Page='+IntToStr(Page)+'&&PerPage='+IntToStr(PerPage);
-        
+        uri := uri + '&&Order=' + Order;
+
         responseJson := httpget(uri, CorpNum,'');
         
         result := TStatementSearchList.Create;
