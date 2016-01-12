@@ -135,8 +135,10 @@ type
 
                 SenderCorpName          : string;
                 SenderCorpNum           : string;
+                SenderPrintYN           : Boolean;
                 ReceiverCorpName        : string;
                 ReceiverCorpNum         : string;
+                ReceiverPrintYN         : Boolean;
 
                 SupplyCostTotal         : string;
                 TaxTotal                : string;
@@ -824,9 +826,12 @@ begin
 
         result.senderCorpName := getJSonString(json,'senderCorpName');
         result.senderCorpNum := getJSonString(json,'senderCorpNum');
+        result.senderPrintYN := getJSonBoolean(json,'senderPrintYN');
+
         result.receiverCorpName := getJSonString(json,'receiverCorpName');
         result.receiverCorpNum := getJSonString(json,'receiverCorpNum');
-
+        result.receiverPrintYN := getJSonBoolean(json,'receiverPrintYN');
+        
         result.supplyCostTotal := getJSonString(json,'supplyCostTotal');
         result.taxTotal := getJSonString(json,'taxTotal');
         result.purposeType := getJSonString(json,'purposeType');
