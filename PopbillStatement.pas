@@ -119,6 +119,7 @@ type
 
                 detailList           : TDetailList;
                 propertyBag          : TPropertyList;
+                destructor Destroy; override;
         end;
 
 
@@ -165,6 +166,7 @@ type
                 pageCount               : Integer;
                 message                 : String;
                 list                    : TStatementInfoList;
+                destructor Destroy; override;
         end;
 
         TStatementLog = class
@@ -276,6 +278,33 @@ type
 
 
 implementation
+
+destructor TStatement.Destroy;
+var
+  I: Integer;
+begin
+  for I := 0 to Length(detailList)-1 do
+    if Assigned(detailList[I]) then
+      detailList[I].Free;
+  SetLength(detailList, 0);
+  for I := 0 to Length(propertyBag)-1 do
+    if Assigned(propertyBag[I]) then
+      propertyBag[I].Free;
+  SetLength(propertyBag, 0);
+  inherited Destroy;
+end;
+
+destructor TStatementSearchList.Destroy;
+var
+  I: Integer;
+begin
+  for I := 0 to Length(list)-1 do
+    if Assigned(list[I]) then
+      list[I].Free;
+  SetLength(list, 0);
+  inherited Destroy;
+end;
+
 
 function PosFrom(const SubStr, Value: String; From: integer): integer;
 var
