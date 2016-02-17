@@ -281,30 +281,29 @@ implementation
 
 destructor TStatement.Destroy;
 var
-  I: Integer;
+  i: Integer;
 begin
-  for I := 0 to Length(detailList)-1 do
-    if Assigned(detailList[I]) then
-      detailList[I].Free;
+  for i := 0 to Length(detailList)-1 do
+    if Assigned(detailList[i]) then
+      detailList[i].Free;
   SetLength(detailList, 0);
-  for I := 0 to Length(propertyBag)-1 do
-    if Assigned(propertyBag[I]) then
-      propertyBag[I].Free;
+  for i := 0 to Length(propertyBag)-1 do
+    if Assigned(propertyBag[i]) then
+      propertyBag[i].Free;
   SetLength(propertyBag, 0);
   inherited Destroy;
 end;
 
 destructor TStatementSearchList.Destroy;
 var
-  I: Integer;
+  i: Integer;
 begin
-  for I := 0 to Length(list)-1 do
-    if Assigned(list[I]) then
-      list[I].Free;
+  for i := 0 to Length(list)-1 do
+    if Assigned(list[i]) then
+      list[i].Free;
   SetLength(list, 0);
   inherited Destroy;
 end;
-
 
 function PosFrom(const SubStr, Value: String; From: integer): integer;
 var
