@@ -33,6 +33,12 @@ uses
         Popbill,
         Linkhub;
 type
+        TStatementChargeInfo = class
+        public
+                unitCost : string;
+                chargeMethod : string;
+                rateSystem : string;
+        end;
 
         TStatementDetail = class
         public
@@ -274,6 +280,10 @@ type
                 // 다른 전자명세서 해제
                 function DetachStatement(CorpNum : String; ItemCode:Integer; MgtKey:String; SubItemCode :Integer; SubMgtKey :String) : TResponse;
 
+                // 과금정보 확인
+                function GetChargeInfo(CorpNum : String; ItemCode:Integer) : TStatementChargeInfo;
+
+
         end;
 
 
@@ -372,6 +382,25 @@ begin
        AddScope('125');
        AddScope('126');
 end;
+
+function TStatementService.GetChargeInfo(CorpNum : string; ItemCode:Integer) : TStatementChargeInfo;
+var
+        responseJson : String;
+begin
+        responseJson := httpget('/Statement/ChargeInfo/'+IntToStr(ItemCode),CorpNum,'');
+
+        try
+                result := TStatementChargeInfo.Create;
+
+                result.unitCost := getJSonString(responseJson, 'unitCost');
+                result.chargeMethod := getJSonString(responseJson, 'chargeMethod');
+                result.rateSystem := getJSonString(responseJson, 'rateSystem');
+
+        except on E:Exception do
+                raise EPopbillException.Create(-99999999,'결과처리 실패.[Malformed Json]');
+        end;
+end;
+
 
 function TStatementService.GetURL(CorpNum : String; UserID : String; TOGO : String) : String;
 var
