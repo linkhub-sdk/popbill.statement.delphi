@@ -20,8 +20,10 @@
 * http://www.popbill.com
 * Author : Kim Seongjun (pallet027@gmail.com)
 * Written : 2014-07-17
-
-* Thanks for your interest. 
+* Contributor : Jeong Yohan(code@linkhub.co.kr)
+* Updated : 2016-08-16
+*
+* Thanks for your interest.
 *=================================================================================
 *)
 unit PopbillStatement;
@@ -241,7 +243,10 @@ type
                 function FAXSend(CorpNum : String; Statement : TStatement; sendNum : String; receiveNum : String; UserID : String) : String;
 
                 // 전자명세서 목록조회
-                function Search(CorpNum : String; DType:String; SDate:String; EDate:String; State:Array Of String; ItemCode:Array Of Integer; Page:Integer; PerPage: Integer; Order : String) : TStatementSearchList;
+                function Search(CorpNum : String; DType:String; SDate:String; EDate:String; State:Array Of String; ItemCode:Array Of Integer; Page:Integer; PerPage: Integer; Order : String) : TStatementSearchList; overload;
+                // 전자명세서 목록조회
+                function Search(CorpNum : String; DType:String; SDate:String; EDate:String; State:Array Of String; ItemCode:Array Of Integer; QString:String; Page:Integer; PerPage: Integer; Order : String) : TStatementSearchList; overload;
+
 
                 //전자명세서 요약정보 및 상태정보 확인.
                 function GetInfo(CorpNum : string; ItemCode:Integer; MgtKey: string) : TStatementInfo;
@@ -314,6 +319,80 @@ begin
   SetLength(list, 0);
   inherited Destroy;
 end;
+
+function UrlEncodeUTF8(stInput : widestring) : string;
+  const
+    hex : array[0..255] of string = (
+     '%00', '%01', '%02', '%03', '%04', '%05', '%06', '%07',
+     '%08', '%09', '%0a', '%0b', '%0c', '%0d', '%0e', '%0f',
+     '%10', '%11', '%12', '%13', '%14', '%15', '%16', '%17',
+     '%18', '%19', '%1a', '%1b', '%1c', '%1d', '%1e', '%1f',
+     '%20', '%21', '%22', '%23', '%24', '%25', '%26', '%27',
+     '%28', '%29', '%2a', '%2b', '%2c', '%2d', '%2e', '%2f',
+     '%30', '%31', '%32', '%33', '%34', '%35', '%36', '%37',
+     '%38', '%39', '%3a', '%3b', '%3c', '%3d', '%3e', '%3f',
+     '%40', '%41', '%42', '%43', '%44', '%45', '%46', '%47',
+     '%48', '%49', '%4a', '%4b', '%4c', '%4d', '%4e', '%4f',
+     '%50', '%51', '%52', '%53', '%54', '%55', '%56', '%57',
+     '%58', '%59', '%5a', '%5b', '%5c', '%5d', '%5e', '%5f',
+     '%60', '%61', '%62', '%63', '%64', '%65', '%66', '%67',
+     '%68', '%69', '%6a', '%6b', '%6c', '%6d', '%6e', '%6f',
+     '%70', '%71', '%72', '%73', '%74', '%75', '%76', '%77',
+     '%78', '%79', '%7a', '%7b', '%7c', '%7d', '%7e', '%7f',
+     '%80', '%81', '%82', '%83', '%84', '%85', '%86', '%87',
+     '%88', '%89', '%8a', '%8b', '%8c', '%8d', '%8e', '%8f',
+     '%90', '%91', '%92', '%93', '%94', '%95', '%96', '%97',
+     '%98', '%99', '%9a', '%9b', '%9c', '%9d', '%9e', '%9f',
+     '%a0', '%a1', '%a2', '%a3', '%a4', '%a5', '%a6', '%a7',
+     '%a8', '%a9', '%aa', '%ab', '%ac', '%ad', '%ae', '%af',
+     '%b0', '%b1', '%b2', '%b3', '%b4', '%b5', '%b6', '%b7',
+     '%b8', '%b9', '%ba', '%bb', '%bc', '%bd', '%be', '%bf',
+     '%c0', '%c1', '%c2', '%c3', '%c4', '%c5', '%c6', '%c7',
+     '%c8', '%c9', '%ca', '%cb', '%cc', '%cd', '%ce', '%cf',
+     '%d0', '%d1', '%d2', '%d3', '%d4', '%d5', '%d6', '%d7',
+     '%d8', '%d9', '%da', '%db', '%dc', '%dd', '%de', '%df',
+     '%e0', '%e1', '%e2', '%e3', '%e4', '%e5', '%e6', '%e7',
+     '%e8', '%e9', '%ea', '%eb', '%ec', '%ed', '%ee', '%ef',
+     '%f0', '%f1', '%f2', '%f3', '%f4', '%f5', '%f6', '%f7',
+     '%f8', '%f9', '%fa', '%fb', '%fc', '%fd', '%fe', '%ff');
+ var
+   iLen,iIndex : integer;
+   stEncoded : string;
+   ch : widechar;
+ begin
+   iLen := Length(stInput);
+   stEncoded := '';
+   for iIndex := 1 to iLen do
+   begin
+     ch := stInput[iIndex];
+     if (ch >= 'A') and (ch <= 'Z') then
+       stEncoded := stEncoded + ch
+     else if (ch >= 'a') and (ch <= 'z') then
+       stEncoded := stEncoded + ch
+     else if (ch >= '0') and (ch <= '9') then
+       stEncoded := stEncoded + ch
+     else if (ch = ' ') then
+       stEncoded := stEncoded + '+'
+     else if ((ch = '-') or (ch = '_') or (ch = '.') or (ch = '!') or (ch = '*')
+       or (ch = '~') or (ch = '\')  or (ch = '(') or (ch = ')')) then
+       stEncoded := stEncoded + ch
+     else if (Ord(ch) <= $07F) then
+       stEncoded := stEncoded + hex[Ord(ch)]
+     else if (Ord(ch) <= $7FF) then
+     begin
+        stEncoded := stEncoded + hex[$c0 or (Ord(ch) shr 6)];
+        stEncoded := stEncoded + hex[$80 or (Ord(ch) and $3F)];
+     end
+     else
+     begin
+        stEncoded := stEncoded + hex[$e0 or (Ord(ch) shr 12)];
+        stEncoded := stEncoded + hex[$80 or ((Ord(ch) shr 6) and ($3F))];
+        stEncoded := stEncoded + hex[$80 or ((Ord(ch)) and ($3F))];
+     end;
+   end;
+   result := (stEncoded);
+ end;
+
 
 function PosFrom(const SubStr, Value: String; From: integer): integer;
 var
@@ -1106,6 +1185,11 @@ begin
 end;
 
 function TStatementService.Search(CorpNum : String; DType:String; SDate:String; EDate:String; State:Array Of String; ItemCode:Array Of Integer; Page:Integer; PerPage: Integer; Order : String) : TStatementSearchList;
+begin
+        result := Search(CorpNum, DType, SDate, EDate, State, ItemCode, '', Page, PerPage, Order);
+end;
+
+function TStatementService.Search(CorpNum : String; DType:String; SDate:String; EDate:String; State:Array Of String; ItemCode:Array Of Integer; QString:String; Page:Integer; PerPage: Integer; Order : String) : TStatementSearchList;
 var
         responseJson : String;
         uri : String;
@@ -1148,6 +1232,8 @@ begin
         uri := uri + '&&State='+StateList + '&&ItemCode='+ItemCodeList;
         uri := uri + '&&Page='+IntToStr(Page)+'&&PerPage='+IntToStr(PerPage);
         uri := uri + '&&Order=' + Order;
+        uri := uri + '&&QString=' + UrlEncodeUTF8(QString);
+
 
         responseJson := httpget(uri, CorpNum,'');
         
