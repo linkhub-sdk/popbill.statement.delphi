@@ -21,7 +21,7 @@
 * Author : Kim Seongjun (pallet027@gmail.com)
 * Written : 2014-07-17
 * Contributor : Jeong Yohan(code@linkhub.co.kr)
-* Updated : 2016-08-16
+* Updated : 2017-02-22
 *
 * Thanks for your interest.
 *=================================================================================
@@ -213,34 +213,42 @@ type
         public
                 constructor Create(LinkID : String; SecretKey : String);
                 //팝필 거래명세서 연결 url.
-                function GetURL(CorpNum : String; UserID : String; TOGO : String) : String;
+                function GetURL(CorpNum : String; UserID : String; TOGO : String) : String; overload;
 
+                //팝필 거래명세서 연결 url.
+                function GetURL(CorpNum : String; TOGO : String) : String; overload;
+
+                
                 //관리번호 사용여부 확인
                 function CheckMgtKeyInUse(CorpNum : String; ItemCode:Integer; MgtKey : String) : boolean;
 
                 //즉시발행 
-                function RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String) : TResponse;
+                function RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String = '') : TResponse;
 
                 //임시저장.
-                function Register(CorpNum : String; Statement : TStatement; UserID : String) : TResponse;
+                function Register(CorpNum : String; Statement : TStatement; UserID : String = '') : TResponse;
+                
                 //수정.
-                function Update(CorpNum : String; ItemCode:Integer; MgtKey : String; Statement : TStatement; UserID : String) : TResponse;
+                function Update(CorpNum : String; ItemCode:Integer; MgtKey : String; Statement : TStatement; UserID : String = '') : TResponse;
 
                 //발행.
-                function Issue(CorpNum : String; ItemCode:Integer; MgtKey : String; Memo :String; UserID : String) : TResponse;
+                function Issue(CorpNum : String; ItemCode:Integer; MgtKey : String; Memo :String; UserID : String = '') : TResponse;
+                
                 //취소.
-                function Cancel(CorpNum : String; ItemCode:Integer; MgtKey : String; Memo : String; UserID : String) : TResponse;
+                function Cancel(CorpNum : String; ItemCode:Integer; MgtKey : String; Memo : String; UserID : String = '') : TResponse;
+                
                 //삭제.
-                function Delete(CorpNum : String; ItemCode:Integer;  MgtKey: String; UserID : String) : TResponse;
+                function Delete(CorpNum : String; ItemCode:Integer;  MgtKey: String; UserID : String = '') : TResponse;
+                
 
                 //이메일재전송.
-                function SendEmail(CorpNum : String; ItemCode:Integer; MgtKey : String; Receiver:String; UserID : String) : TResponse;
+                function SendEmail(CorpNum : String; ItemCode:Integer; MgtKey : String; Receiver:String; UserID : String = '') : TResponse;
                 //문자재전송.
-                function SendSMS(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; Contents : String; UserID : String) : TResponse;
+                function SendSMS(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; Contents : String; UserID : String = '') : TResponse;
                 // 팩스 재전송.
-                function SendFAX(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; UserID : String) : TResponse;
+                function SendFAX(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; UserID : String = '') : TResponse;
                 // 팩스 사전 전송
-                function FAXSend(CorpNum : String; Statement : TStatement; sendNum : String; receiveNum : String; UserID : String) : String;
+                function FAXSend(CorpNum : String; Statement : TStatement; sendNum : String; receiveNum : String; UserID : String = '') : String;
 
                 // 전자명세서 목록조회
                 function Search(CorpNum : String; DType:String; SDate:String; EDate:String; State:Array Of String; ItemCode:Array Of Integer; Page:Integer; PerPage: Integer; Order : String) : TStatementSearchList; overload;
@@ -255,25 +263,34 @@ type
 
                 //전자명세서 요약정보 및 상태 다량 확인.
                 function GetInfos(CorpNum : string; ItemCode:Integer; MgtKeyList: Array Of String) : TStatementInfoList;
+
                 //문서이력 확인.
                 function GetLogs(CorpNum : string; ItemCode:Integer; MgtKey: string) : TStatementLogList;
+
                 //파일 첨부.
-                function AttachFile(CorpNum : String; ItemCode:Integer; MgtKey : String; FilePath : String; UserID : String) : TResponse;
+                function AttachFile(CorpNum : String; ItemCode:Integer; MgtKey : String; FilePath : String; UserID : String = '') : TResponse;
+
                 //첨부파일 목록 확인.
                 function GetFiles(CorpNum: String; ItemCode:Integer; MgtKey : String) : TAttachedFileList;
+
                 //첨부파일 삭제.
-                function DeleteFile(CorpNum: string; ItemCode:Integer; MgtKey : String; FileID : String; UserID : String) : TResponse;
+                function DeleteFile(CorpNum: string; ItemCode:Integer; MgtKey : String; FileID : String; UserID : String = '') : TResponse;
+
+
                 //팝업URL
-                function GetPopUpURL(CorpNum: string; ItemCode:Integer; MgtKey : String; UserID: String) : string;
+                function GetPopUpURL(CorpNum: string; ItemCode:Integer; MgtKey : String; UserID: String = '') : string;
+
                 //인쇄URL
-                function GetPrintURL(CorpNum: string; ItemCode:Integer; MgtKey : String; UserID: String) : string;
+                function GetPrintURL(CorpNum: string; ItemCode:Integer; MgtKey : String; UserID: String = '') : string;
+
                 //수신자인쇄URL
-                function GetEPrintURL(CorpNum: string; ItemCode:Integer; MgtKey : String; UserID: String) : string;
+                function GetEPrintURL(CorpNum: string; ItemCode:Integer; MgtKey : String; UserID: String = '') : string;
+
                 //다량인쇄URL
-                function GetMassPrintURL(CorpNum: string; ItemCode:Integer; MgtKeyList: Array Of String; UserID: String) : string;
+                function GetMassPrintURL(CorpNum: string; ItemCode:Integer; MgtKeyList: Array Of String; UserID: String = '') : string;
 
                 //Mail URL
-                function GetMailURL(CorpNum: string; ItemCode:Integer; MgtKey : String; UserID: String) : string;
+                function GetMailURL(CorpNum: string; ItemCode:Integer; MgtKey : String; UserID: String = '') : string;
 
 
                 //회원별 전자명세서 발행단가 확인.
@@ -480,6 +497,10 @@ begin
         end;
 end;
 
+function TStatementService.GetURL(CorpNum : String; TOGO : String) : String;
+begin
+        result := GetURL(CorpNum, '', TOGO);
+end;
 
 function TStatementService.GetURL(CorpNum : String; UserID : String; TOGO : String) : String;
 var
@@ -646,7 +667,7 @@ begin
         result := requestJson;
 end;
 
-function TStatementService.FAXSend(CorpNum : String; Statement : TStatement; sendNum:String; receiveNum: String; UserID : String) : String;
+function TStatementService.FAXSend(CorpNum : String; Statement : TStatement; sendNum:String; receiveNum: String; UserID : String = '') : String;
 var
         requestJson : string;
         responseJson : string;
@@ -829,7 +850,7 @@ begin
         end;
 end;
 
-function TStatementService.SendEmail(CorpNum : String; ItemCode:Integer; MgtKey :String; Receiver:String; UserID : String) : TResponse;
+function TStatementService.SendEmail(CorpNum : String; ItemCode:Integer; MgtKey :String; Receiver:String; UserID : String = '') : TResponse;
 var
         requestJson : string;
         responseJson : string;
@@ -868,7 +889,7 @@ begin
         end;
 end;
 
-function TStatementService.SendSMS(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; Contents : String; UserID : String) : TResponse;
+function TStatementService.SendSMS(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; Contents : String; UserID : String = '') : TResponse;
 var
         requestJson : string;
         responseJson : string;
@@ -908,7 +929,7 @@ begin
 
 end;
 
-function TStatementService.SendFAX(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; UserID : String) : TResponse;
+function TStatementService.SendFAX(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; UserID : String = '') : TResponse;
 var
         requestJson : string;
         responseJson : string;
@@ -1335,7 +1356,7 @@ begin
         end;
 end;
 
-function TStatementService.AttachFile(CorpNum : String; ItemCode:Integer; MgtKey : String; FilePath : String; UserID : String) : TResponse;
+function TStatementService.AttachFile(CorpNum : String; ItemCode:Integer; MgtKey : String; FilePath : String; UserID : String = '') : TResponse;
 var
         responseJson : string;
         fileName : string;
@@ -1407,7 +1428,7 @@ begin
         end;
 end;
 
-function TStatementService.DeleteFile(CorpNum : String; ItemCode:Integer;  MgtKey: String; FileID : String; UserID : String) : TResponse;
+function TStatementService.DeleteFile(CorpNum : String; ItemCode:Integer;  MgtKey: String; FileID : String; UserID : String = '') : TResponse;
 var
         responseJson : string;
 begin
@@ -1455,7 +1476,7 @@ begin
         end;
 end;
 
-function TStatementService.GetPopUpURL(CorpNum: string; ItemCode:Integer; MgtKey : String;UserID : String) : string;
+function TStatementService.GetPopUpURL(CorpNum: string; ItemCode:Integer; MgtKey : String;UserID : String = '') : string;
 var
         responseJson : String;
 begin
@@ -1470,7 +1491,7 @@ begin
         result := getJSonString(responseJson,'url');
 end;
 
-function TStatementService.GetPrintURL(CorpNum: string; ItemCode:Integer; MgtKey : String;UserID : String) : string;
+function TStatementService.GetPrintURL(CorpNum: string; ItemCode:Integer; MgtKey : String;UserID : String = '') : string;
 var
         responseJson : String;
 begin
@@ -1485,7 +1506,7 @@ begin
         result := getJSonString(responseJson,'url');
 end;
 
-function TStatementService.GetEPrintURL(CorpNum: string; ItemCode:Integer; MgtKey : String;UserID : String) : string;
+function TStatementService.GetEPrintURL(CorpNum: string; ItemCode:Integer; MgtKey : String;UserID : String = '') : string;
 var
         responseJson : String;
 begin
@@ -1500,7 +1521,7 @@ begin
         result := getJSonString(responseJson,'url');
 end;
 
-function TStatementService.GetMassPrintURL(CorpNum: string; ItemCode:Integer; MgtKeyList: Array Of String; UserID: String) : string;
+function TStatementService.GetMassPrintURL(CorpNum: string; ItemCode:Integer; MgtKeyList: Array Of String; UserID: String = '') : string;
 var
         requestJson,responseJson:string;
         i : integer;
@@ -1529,7 +1550,7 @@ begin
 
 end;
 
-function TStatementService.GetMailURL(CorpNum: string; ItemCode:Integer; MgtKey : String;UserID : String) : string;
+function TStatementService.GetMailURL(CorpNum: string; ItemCode:Integer; MgtKey : String;UserID : String = '') : string;
 var
         responseJson : String;
 begin
