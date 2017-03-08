@@ -519,7 +519,7 @@ begin
                                 result := false;
                                 Exit;
                         end;
-                        raise EPopbillException.Create(E.code, E.message);
+                        raise EPopbillException.Create(-99999999, E.message);
                 end;
         end;
         statementInfo := jsonToTStatementInfo(responseJson);
