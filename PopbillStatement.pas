@@ -216,7 +216,9 @@ type
                 //팝필 거래명세서 연결 url.
                 function GetURL(CorpNum : String; TOGO : String) : String; overload;
 
-                
+                //팝빌 인감 및 첨부문서 등록 URL
+                function GetSealURL(CorpNum : String; UserID : String) : String;
+
                 //관리번호 사용여부 확인
                 function CheckMgtKeyInUse(CorpNum : String; ItemCode:Integer; MgtKey : String) : boolean;
 
@@ -509,6 +511,14 @@ var
         responseJson : String;
 begin
         responseJson := httpget('/Statement/?TG='+ TOGO,CorpNum,UserID);
+        result := getJSonString(responseJson,'url');
+end;
+
+function TStatementService.GetSealURL(CorpNum : String; UserID : String) : String;
+var
+        responseJson : String;
+begin
+        responseJson := httpget('/?TG=SEAL', CorpNum, UserID);
         result := getJSonString(responseJson,'url');
 end;
 
