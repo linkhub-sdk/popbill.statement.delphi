@@ -10,9 +10,7 @@
 * Author : Kim Seongjun (pallet027@gmail.com)
 * Written : 2014-07-17
 * Contributor : Jeong Yohan(code@linkhub.co.kr)
-* Updated : 2017-03-08
-* Contributor : Kim EunHye(code@linkhub.co.kr)
-* Updated : 2018-09-18
+* Updated : 2019-03-19
 *
 * Thanks for your interest.
 *=================================================================================
@@ -487,7 +485,16 @@ function TStatementService.GetChargeInfo(CorpNum : string; ItemCode:Integer) : T
 var
         responseJson : String;
 begin
-        responseJson := httpget('/Statement/ChargeInfo/'+IntToStr(ItemCode),CorpNum,'');
+        try
+                responseJson := httpget('/Statement/ChargeInfo/'+IntToStr(ItemCode),CorpNum,'');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code, le.message);
+                        end;
+                end;
+        end;
 
         try
                 result := TStatementChargeInfo.Create;
@@ -497,7 +504,20 @@ begin
                 result.rateSystem := getJSonString(responseJson, 'rateSystem');
 
         except on E:Exception do
-                raise EPopbillException.Create(-99999999,'결과처리 실패.[Malformed Json]');
+                begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(-99999999,'결과처리 실패.[Malformed Json]');
+                                exit;
+                        end
+                        else
+                        begin
+                                result := TStatementChargeInfo.Create;
+                                setLastErrCode(-99999999);
+                                setLastErrMessage('결과처리 실패.[Malformed Json]');
+                                exit;
+                        end;
+                end;
         end;
 end;
 
@@ -510,16 +530,46 @@ function TStatementService.GetURL(CorpNum : String; UserID : String; TOGO : Stri
 var
         responseJson : String;
 begin
-        responseJson := httpget('/Statement/?TG='+ TOGO,CorpNum,UserID);
-        result := getJSonString(responseJson,'url');
+        try
+                responseJson := httpget('/Statement/?TG='+ TOGO,CorpNum,UserID);
+                result := getJSonString(responseJson,'url');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code, le.message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result := '';
+                                exit;
+                        end;
+                end;
+        end;
 end;
 
 function TStatementService.GetSealURL(CorpNum : String; UserID : String) : String;
 var
         responseJson : String;
 begin
-        responseJson := httpget('/?TG=SEAL', CorpNum, UserID);
-        result := getJSonString(responseJson,'url');
+        try        
+                responseJson := httpget('/?TG=SEAL', CorpNum, UserID);
+                result := getJSonString(responseJson,'url');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code, le.message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result := '';
+                                exit;
+                        end;
+                end;
+        end;       
 end;
 
 function TStatementService.CheckMgtKeyInUse(CorpNum : String; ItemCode:Integer; MgtKey : String): boolean;
@@ -529,8 +579,18 @@ var
 begin
         if MgtKey = '' then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
-                Exit;
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end
+                else
+                begin
+                        result := false;
+                        setLastErrCode(-99999999);
+                        setLastErrMessage('관리번호가 입력되지 않았습니다.');
+                        exit;
+                end;
         end;
 
         try                                                       
@@ -542,7 +602,7 @@ begin
                                 result := false;
                                 Exit;
                         end;
-                        raise EPopbillException.Create(-99999999, E.message);
+                        raise EPopbillException.Create(E.code, E.message);
                 end;
         end;
         statementInfo := jsonToTStatementInfo(responseJson);
@@ -684,11 +744,20 @@ var
         requestJson : string;
         responseJson : string;
 begin
-        requestJson := TStatementTojson(Statement,'',sendNum,receiveNum);
 
-        responseJson := httppost('/Statement',CorpNum,UserID,requestJson,'FAX');
-
-        result := getJSonString(responseJson,'receiptNum');
+        try
+                requestJson := TStatementTojson(Statement,'',sendNum,receiveNum);
+                responseJson := httppost('/Statement',CorpNum,UserID,requestJson,'FAX');
+                result := getJSonString(responseJson,'receiptNum');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code, le.message);
+                                exit;
+                        end;
+                end;
+        end;
 end;
 
 function TStatementService.RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String) : TResponse;
@@ -698,21 +767,31 @@ var
 begin
         try
                 requestJson := TStatementTojson(Statement, Memo,'','');
-
                 responseJson := httppost('/Statement',CorpNum,UserID,requestJson,'ISSUE');
-
-                result.code := getJSonInteger(responseJson,'code');
-                result.message := getJSonString(responseJson,'message');
         except
                 on le : EPopbillException do begin
                         if FIsThrowException then
                         begin
                                 raise EPopbillException.Create(le.code,le.Message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result.code := le.code;
+                                result.message := le.Message;
                         end;
-
-                        result.code := le.code;
-                        result.message := le.Message;
                 end;
+        end;
+
+        if LastErrCode <> 0 then
+        begin
+                result.code := LastErrCode;
+                result.message := LastErrMessage;
+        end
+        else
+        begin
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
         end;
 end;
 
@@ -723,21 +802,31 @@ var
 begin
         try
                 requestJson := TStatementTojson(Statement,'','','');
-
                 responseJson := httppost('/Statement',CorpNum,UserID,requestJson);
-
-                result.code := getJSonInteger(responseJson,'code');
-                result.message := getJSonString(responseJson,'message');
         except
                 on le : EPopbillException do begin
                         if FIsThrowException then
                         begin
                                 raise EPopbillException.Create(le.code,le.Message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result.code := le.code;
+                                result.message := le.Message;
                         end;
-
-                        result.code := le.code;
-                        result.message := le.Message;
                 end;
+        end;
+
+        if LastErrCode <> 0 then
+        begin
+                result.code := LastErrCode;
+                result.message := LastErrMessage;
+        end
+        else
+        begin
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
         end;
 end;
 
@@ -752,11 +841,13 @@ begin
                 begin
                         raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
                         Exit;
+                end
+                else
+                begin
+                        result.code := -99999999;
+                        result.message := '관리번호가 입력되지 않았습니다.';
+                        Exit;
                 end;
-
-                result.code := -99999999;
-                result.message := '관리번호가 입력되지 않았습니다.';
-                Exit;
         end;
         
         try
@@ -764,22 +855,31 @@ begin
 
                 responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
                                         CorpNum,UserID,requestJson,'PATCH');
-
-                result.code := getJSonInteger(responseJson,'code');
-                result.message := getJSonString(responseJson,'message');
-
         except
                 on le : EPopbillException do begin
                         if FIsThrowException then
                         begin
                                 raise EPopbillException.Create(le.code,le.Message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result.code := le.code;
+                                result.message := le.Message;
                         end;
-
-                        result.code := le.code;
-                        result.message := le.Message;
                 end;
         end;
 
+        if LastErrCode <> 0 then
+        begin
+                result.code := LastErrCode;
+                result.message := LastErrMessage;
+        end
+        else
+        begin
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+        end;
 end;
 
 function TStatementService.Issue(CorpNum : String; ItemCode:Integer; MgtKey : String; Memo : String; UserID : String) : TResponse;
@@ -793,11 +893,13 @@ begin
                 begin
                         raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
                         Exit;
+                end
+                else
+                begin
+                        result.code := -99999999;
+                        result.message := '관리번호가 입력되지 않았습니다.';
+                        Exit;
                 end;
-                
-                result.code := -99999999;
-                result.message := '관리번호가 입력되지 않았습니다.';
-                Exit;
         end;
 
         try
@@ -805,19 +907,30 @@ begin
 
                 responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
                                         CorpNum,UserID,requestJson,'ISSUE');
-
-                result.code := getJSonInteger(responseJson,'code');
-                result.message := getJSonString(responseJson,'message');
         except
                 on le : EPopbillException do begin
                         if FIsThrowException then
                         begin
                                 raise EPopbillException.Create(le.code,le.Message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result.code := le.code;
+                                result.message := le.Message;
                         end;
-                        
-                        result.code := le.code;
-                        result.message := le.Message;
                 end;
+        end;
+
+        if LastErrCode <> 0 then
+        begin
+                result.code := LastErrCode;
+                result.message := LastErrMessage;
+        end
+        else
+        begin
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
         end;
 
 end;
@@ -833,32 +946,43 @@ begin
                 begin
                         raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
                         Exit;
+                end
+                else
+                begin
+                        result.code := -99999999;
+                        result.message := '관리번호가 입력되지 않았습니다.';
+                        Exit;
                 end;
-                
-                result.code := -99999999;
-                result.message := '관리번호가 입력되지 않았습니다.';
-                Exit;
         end;
 
         try
                 requestJson := '{"memo":"'+EscapeString(Memo)+'"}';
-
                 responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
                                         CorpNum,UserID,requestJson,'CANCEL');
-
-                result.code := getJSonInteger(responseJson,'code');
-                result.message := getJSonString(responseJson,'message');
-                
         except
                 on le : EPopbillException do begin
                         if FIsThrowException then
                         begin
                                 raise EPopbillException.Create(le.code,le.Message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result.code := le.code;
+                                result.message := le.Message;
                         end;
-
-                        result.code := le.code;
-                        result.message := le.Message;
                 end;
+        end;
+
+        if LastErrCode <> 0 then
+        begin
+                result.code := LastErrCode;
+                result.message := LastErrMessage;
+        end
+        else
+        begin
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
         end;
 end;
 
@@ -873,11 +997,13 @@ begin
                 begin
                         raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
                         Exit;
+                end
+                else
+                begin
+                        result.code := -99999999;
+                        result.message := '관리번호가 입력되지 않았습니다.';
+                        Exit;
                 end;
-                
-                result.code := -99999999;
-                result.message := '관리번호가 입력되지 않았습니다.';
-                Exit;
         end;
         
         try
@@ -885,19 +1011,30 @@ begin
 
                 responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
                                         CorpNum,UserID,requestJson,'EMAIL');
-
-                result.code := getJSonInteger(responseJson,'code');
-                result.message := getJSonString(responseJson,'message');
         except
                 on le : EPopbillException do begin
                         if FIsThrowException then
                         begin
                                 raise EPopbillException.Create(le.code,le.Message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result.code := le.code;
+                                result.message := le.Message;
                         end;
-
-                        result.code := le.code;
-                        result.message := le.Message;
                 end;
+        end;
+
+        if LastErrCode <> 0 then
+        begin
+                result.code := LastErrCode;
+                result.message := LastErrMessage;
+        end
+        else
+        begin
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
         end;
 end;
 
@@ -912,11 +1049,13 @@ begin
                 begin
                         raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
                         Exit;
+                end
+                else
+                begin
+                        result.code := -99999999;
+                        result.message := '관리번호가 입력되지 않았습니다.';
+                        Exit;
                 end;
-                
-                result.code := -99999999;
-                result.message := '관리번호가 입력되지 않았습니다.';
-                Exit;
         end;
         
         try
@@ -924,19 +1063,30 @@ begin
 
                 responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
                                         CorpNum,UserID,requestJson,'SMS');
-
-                result.code := getJSonInteger(responseJson,'code');
-                result.message := getJSonString(responseJson,'message');
         except
                 on le : EPopbillException do begin
                         if FIsThrowException then
                         begin
                                 raise EPopbillException.Create(le.code,le.Message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result.code := le.code;
+                                result.message := le.Message;
                         end;
-
-                        result.code := le.code;
-                        result.message := le.Message;
                 end;
+        end;
+
+        if LastErrCode <> 0 then
+        begin
+                result.code := LastErrCode;
+                result.message := LastErrMessage;
+        end
+        else
+        begin
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
         end;
 
 end;
@@ -952,11 +1102,13 @@ begin
                 begin
                         raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
                         Exit;
+                end
+                else
+                begin
+                        result.code := -99999999;
+                        result.message := '관리번호가 입력되지 않았습니다.';
+                        Exit;
                 end;
-                
-                result.code := -99999999;
-                result.message := '관리번호가 입력되지 않았습니다.';
-                Exit;
         end;
 
         try
@@ -964,19 +1116,30 @@ begin
 
                 responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,
                                         CorpNum,UserID,requestJson,'FAX');
-
-                result.code := getJSonInteger(responseJson,'code');
-                result.message := getJSonString(responseJson,'message');
         except
                 on le : EPopbillException do begin
                         if FIsThrowException then
                         begin
                                 raise EPopbillException.Create(le.code,le.Message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result.code := le.code;
+                                result.message := le.Message;
                         end;
-
-                        result.code := le.code;
-                        result.message := le.Message;
                 end;
+        end;
+
+        if LastErrCode <> 0 then
+        begin
+                result.code := LastErrCode;
+                result.message := LastErrMessage;
+        end
+        else
+        begin
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
         end;
 end;
 
@@ -1023,13 +1186,37 @@ var
 begin
         if MgtKey = '' then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
-                Exit;
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end
+                else
+                begin
+                        result := TStatementInfo.Create;
+                        setLastErrCode(-99999999);
+                        setLastErrMessage('관리번호가 입력되지 않았습니다.');
+                        exit;
+                end;
         end;
 
-        responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey , CorpNum,'');
-
-        result := jsonToTStatementInfo(responseJson);
+        try
+                responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey , CorpNum,'');
+                result := jsonToTStatementInfo(responseJson);
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code, le.Message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result := TStatementInfo.Create;
+                                exit;
+                        end;
+                end;
+        end;
 
 end;
 
@@ -1167,14 +1354,38 @@ var
 begin
         if MgtKey = '' then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
-                Exit;
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end
+                else
+                begin
+                        result := TStatement.Create;
+                        setLastErrCode(-99999999);
+                        setLastErrMessage('관리번호가 입력되지 않았습니다.');
+                        exit;
+                end;
+
         end;
 
-        responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey + '?Detail' , CorpNum,'');
-
-        result := jsonToTStatement(responseJson);
-
+        try
+                responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey + '?Detail' , CorpNum,'');
+                result := jsonToTStatement(responseJson);
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result := TStatement.Create();
+                                exit;
+                        end;
+                end;
+        end;
 end;
 
 function TStatementService.getLogs(CorpNum : string; ItemCode:Integer; MgtKey: string) : TStatementLogList;
@@ -1185,36 +1396,82 @@ var
 begin
         if MgtKey = '' then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
-                Exit;
-        end;
-
-        responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey + '/Logs' ,
-                                 CorpNum,'');
-
-        try
-                jSons := ParseJsonList(responseJson);
-                SetLength(result,Length(jSons));
-
-                for i := 0 to Length(jSons)-1 do
+                if FIsThrowException then
                 begin
-                        result[i] := TStatementLog.Create;
-
-                        result[i].docLogType            := getJSonInteger(jSons[i],'docLogType');
-                        result[i].Log                   := getJSonString(jSons[i],'log');
-                        result[i].procType              := getJSonString(jSons[i],'procType');
-                        result[i].procCorpName          := getJSonString(jSons[i],'procCorpName');
-                        result[i].procContactName       := getJSonString(jSons[i],'procContactName');
-                        result[i].procMemo              := getJSonString(jSons[i],'procMemo');
-                        result[i].regDT                 := getJSonString(jSons[i],'regDT');
-                        result[i].iP                    := getJSonString(jSons[i],'ip');
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end
+                else
+                begin
+                        SetLength(result,0);
+                        setLastErrCode(-99999999);
+                        setLastErrMessage('관리번호가 입력되지 않았습니다.');
+                        Exit;
                 end;
 
-        except on E:Exception do
-                raise EPopbillException.Create(-99999999,'결과처리 실패.[Malformed Json]');
+        end;
+
+        try
+                responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey + '/Logs', CorpNum,'');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code, le.message);
+                        end
+                        else
+                        begin
+                                SetLength(result,0);
+                                SetLength(jSons,0);
+                                exit;
+                        end;
+                end;
+
+        end;
+
+
+        if LastErrCode <> 0 then
+        begin
+                exit;
+        end
+        else
+        begin        
+                try
+                        jSons := ParseJsonList(responseJson);
+                        SetLength(result,Length(jSons));
+
+                        for i := 0 to Length(jSons)-1 do
+                        begin
+                                result[i] := TStatementLog.Create;
+
+                                result[i].docLogType            := getJSonInteger(jSons[i],'docLogType');
+                                result[i].Log                   := getJSonString(jSons[i],'log');
+                                result[i].procType              := getJSonString(jSons[i],'procType');
+                                result[i].procCorpName          := getJSonString(jSons[i],'procCorpName');
+                                result[i].procContactName       := getJSonString(jSons[i],'procContactName');
+                                result[i].procMemo              := getJSonString(jSons[i],'procMemo');
+                                result[i].regDT                 := getJSonString(jSons[i],'regDT');
+                                result[i].iP                    := getJSonString(jSons[i],'ip');
+                        end;
+                except on E:Exception do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(-99999999,'결과처리 실패.[Malformed Json]');
+                                exit;
+                        end
+                        else
+                        begin
+                                SetLength(result,0);
+                                SetLength(jSons,0);
+                                setLastErrCode(-99999999);
+                                setLastErrMessage('결과처리 실패.[Malformed Json]');
+                                exit;
+                        end;
+                end;
+        end;
         end;
         
-        
+
 end;
 
 function TStatementService.Search(CorpNum : String; DType:String; SDate:String; EDate:String; State:Array Of String; ItemCode:Array Of Integer; Page:Integer; PerPage: Integer; Order : String) : TStatementSearchList;
@@ -1268,29 +1525,69 @@ begin
         uri := uri + '&&QString=' + UrlEncodeUTF8(QString);
 
 
-        responseJson := httpget(uri, CorpNum,'');
-        
-        result := TStatementSearchList.Create;
-        
-        result.code             := getJSonInteger(responseJson,'code');
-        result.total            := getJSonInteger(responseJson,'total');
-        result.perPage          := getJSonInteger(responseJson,'perPage');
-        result.pageNum          := getJSonInteger(responseJson,'pageNum');
-        result.pageCount        := getJSonInteger(responseJson,'pageCount');
-        result.message          := getJSonString(responseJson,'message');
-
         try
-
-                jSons := getJSonList(responseJson,'list');
-                SetLength(result.list, Length(jSons));
-                for i:=0 to Length(jSons)-1 do
-                begin
-                        result.list[i] := jsonToTStatementInfo(jSons[i]);
+                responseJson := httpget(uri, CorpNum,'');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result := TStatementSearchList.Create;
+                                result.code := le.code;
+                                result.message := le.message;
+                                exit;
+                        end;
                 end;
-        except on E:Exception do
-                raise EPopbillException.Create(-99999999,'결과처리 실패.[Malformed Json]');
+
         end;
 
+        if LastErrCode <> 0 then
+        begin
+                result := TStatementSearchList.Create;
+                result.code := LastErrCode;
+                result.message := LastErrMessage;
+                exit;
+        end
+        else
+        begin
+        
+                result := TStatementSearchList.Create;
+
+                result.code             := getJSonInteger(responseJson,'code');
+                result.total            := getJSonInteger(responseJson,'total');
+                result.perPage          := getJSonInteger(responseJson,'perPage');
+                result.pageNum          := getJSonInteger(responseJson,'pageNum');
+                result.pageCount        := getJSonInteger(responseJson,'pageCount');
+                result.message          := getJSonString(responseJson,'message');
+
+                try
+
+                        jSons := getJSonList(responseJson,'list');
+                        SetLength(result.list, Length(jSons));
+                        for i:=0 to Length(jSons)-1 do
+                        begin
+                                result.list[i] := jsonToTStatementInfo(jSons[i]);
+                        end;
+                except on E:Exception do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(-99999999,'결과처리 실패.[Malformed Json]');
+                                exit;
+                        end
+                        else
+                        begin
+                                result := TStatementSearchList.Create;
+                                result.code := -99999999;
+                                result.message := '결과처리 실패.[Malformed Json]';
+                                exit; 
+                        end;
+                end;
+        end;
+        end;
 end;
 
 function TStatementService.getInfos(CorpNum : string; ItemCode:Integer; MgtKeyList: Array Of String) : TStatementInfoList;
@@ -1302,8 +1599,18 @@ var
 begin
         if Length(MgtKeyList) = 0 then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
-                Exit;
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end
+                else
+                begin
+                        SetLength(result, 0);
+                        setLastErrCode(-99999999);
+                        setLastErrMessage('관리번호가 입력되지 않았습니다.');
+                        exit;
+                end;
         end;
 
         requestJson := '[';
@@ -1315,20 +1622,61 @@ begin
 
         requestJson := requestJson + ']';
 
-        responseJson := httppost('/Statement/'+ IntToStr(ItemCode),CorpNum,'',requestJson);
-
         try
-                jSons := ParseJsonList(responseJson);
-                SetLength(result,Length(jSons));
-
-                for i := 0 to Length(jSons)-1 do
-                begin
-                        result[i] := jsonToTStatementInfo(jSons[i]);
+                responseJson := httppost('/Statement/'+ IntToStr(ItemCode),CorpNum,'',requestJson);
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code, le.message);
+                        end
+                        else
+                        begin
+                                SetLength(result, 0);
+                                exit;
+                        end;
                 end;
-
-        except on E:Exception do
-                raise EPopbillException.Create(-99999999,'결과처리 실패.[Malformed Json]');
         end;
+
+        if LastErrCode <> 0 then
+        begin
+                SetLength(result,0);
+                SetLength(jSons,0);
+                setLastErrCode(LastErrCode);
+                setLastErrMessage(LastErrMessage);
+                exit;
+        end
+        else
+        begin
+                try
+                        jSons := ParseJsonList(responseJson);
+                        SetLength(result,Length(jSons));
+
+                        for i := 0 to Length(jSons)-1 do
+                        begin
+                                result[i] := jsonToTStatementInfo(jSons[i]);
+                        end;
+
+                except on E:Exception do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(-99999999,'결과처리 실패.[Malformed Json]');
+                                exit;
+                        end
+                        else
+                        begin
+                                SetLength(result, 0);
+                                SetLength(jSons, 0);
+                                setLastErrCode(-99999999);
+                                setLastErrMessage('결과처리 실패.[Malformed Json]');
+                                exit;
+                        end;
+
+                end;
+                end;
+        end;
+        
+
         
 end;
 
@@ -1343,28 +1691,44 @@ begin
                 begin
                         raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
                         Exit;
+                end
+                else
+                begin
+                        result.code := -99999999;
+                        result.message := '관리번호가 입력되지 않았습니다.';
+                        Exit;
                 end;
-                
-                result.code := -99999999;
-                result.message := '관리번호가 입력되지 않았습니다.';
-                Exit;
         end;
         
         try
                 responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey,CorpNum,UserID,'','DELETE');
-
-                result.code := getJSonInteger(responseJson,'code');
-                result.message := getJSonString(responseJson,'message');
         except
                 on le : EPopbillException do begin
                         if FIsThrowException then
                         begin
                                 raise EPopbillException.Create(le.code,le.Message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result.code := le.code;
+                                result.message := le.Message;
+                                exit;
                         end;
-
-                        result.code := le.code;
-                        result.message := le.Message;
                 end;
+        end;
+
+        if LastErrCode <> 0 then
+        begin
+                result.code := LastErrCode;
+                result.message := LastErrMessage;
+                exit;
+        end
+        else
+        begin
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+                exit;
         end;
 end;
 
@@ -1380,11 +1744,13 @@ begin
                 begin
                         raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
                         Exit;
+                end
+                else
+                begin
+                        result.code := -99999999;
+                        result.message := '관리번호가 입력되지 않았습니다.';
+                        Exit;
                 end;
-                
-                result.code := -99999999;
-                result.message := '관리번호가 입력되지 않았습니다.';
-                Exit;
         end;
 
        fileName := ExtractFileName(FilePath);
@@ -1393,22 +1759,36 @@ begin
        try
                 try
                         responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey + '/Files',CorpNum,UserID,'Filedata',fileName,fileData);
-                        result.code := getJSonInteger(responseJson,'code');
-                        result.message := getJSonString(responseJson,'message');
                 except
                         on le : EPopbillException do begin
                                 if FIsThrowException then
                                 begin
                                         raise EPopbillException.Create(le.code,le.Message);
+                                        exit;
+                                end
+                                else
+                                begin
+                                        result.code := le.code;
+                                        result.message := le.Message;
+                                        exit;
                                 end;
-
-                                result.code := le.code;
-                                result.message := le.Message;
                         end;
                 end;
 
        finally
-        fileData.Free;
+                fileData.Free;
+       end;
+
+       if LastErrCode <> 0 then
+       begin
+                result.code := LastErrCode;
+                result.message := LastErrMessage;
+       end
+       else
+       begin
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+                exit;
        end;
 end;
 
@@ -1418,26 +1798,60 @@ var
         jSons : ArrayOfString;
         i : integer;
 begin
-        responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey + '/Files',CorpNum,'');
-
         try
-                jSons := ParseJsonList(responseJson);
-                SetLength(result,Length(jSons));
-
-                for i := 0 to Length(jSons)-1 do
-                begin
-                        result[i] := TAttachedFile.Create;
-
-                        result[i].SerialNum :=  getJSonInteger(jSons[i],'serialNum');
-                        result[i].AttachedFile := getJSonString(jSons[i],'attachedFile');
-                        result[i].DisplayName := getJSonString(jSons[i],'displayName');
-                        result[i].RegDT := getJSonString(jSons[i],'regDT');
-
+                responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey + '/Files',CorpNum,'');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code, le.message);
+                                exit;
+                        end;
                 end;
-
-        except on E:Exception do
-                raise EPopbillException.Create(-99999999,'결과처리 실패.[Malformed Json]');
         end;
+
+        if LastErrCode <> 0 then
+        begin
+                exit;
+        end
+        else
+        begin
+                try
+                        jSons := ParseJsonList(responseJson);
+                        SetLength(result,Length(jSons));
+
+                        for i := 0 to Length(jSons)-1 do
+                        begin
+                                result[i] := TAttachedFile.Create;
+
+                                result[i].SerialNum :=  getJSonInteger(jSons[i],'serialNum');
+                                result[i].AttachedFile := getJSonString(jSons[i],'attachedFile');
+                                result[i].DisplayName := getJSonString(jSons[i],'displayName');
+                                result[i].RegDT := getJSonString(jSons[i],'regDT');
+
+                        end;
+
+                except on E:Exception do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(-99999999,'결과처리 실패.[Malformed Json]');
+                                exit;
+                        end
+                        else
+                        begin
+                                SetLength(result, 0);
+                                SetLength(jSons, 0);
+                                setLastErrCode(-99999999);
+                                setLastErrMessage('결과처리 실패.[Malformed Json]');
+                                exit;
+                        end;
+
+                        end;
+                end;
+        end;
+
+
+
 end;
 
 function TStatementService.DeleteFile(CorpNum : String; ItemCode:Integer;  MgtKey: String; FileID : String; UserID : String = '') : TResponse;
@@ -1450,11 +1864,13 @@ begin
                 begin
                         raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
                         Exit;
+                end
+                else
+                begin
+                        result.code := -99999999;
+                        result.message := '관리번호가 입력되지 않았습니다.';
+                        Exit;
                 end;
-                
-                result.code := -99999999;
-                result.message := '관리번호가 입력되지 않았습니다.';
-                Exit;
         end;
 
         if FileID = '' then
@@ -1463,28 +1879,44 @@ begin
                 begin
                         raise EPopbillException.Create(-99999999,'파일 아이디가 입력되지 않았습니다.');
                         Exit;
+                end
+                else
+                begin
+                        result.code := -99999999;
+                        result.message := '파일 아이디가 입력되지 않았습니다.';
+                        Exit;
                 end;
-
-                result.code := -99999999;
-                result.message := '파일 아이디가 입력되지 않았습니다.';
-                Exit;
         end;
 
         try
                 responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey + '/Files/' + FileID,CorpNum,UserID,'','DELETE');
-
-                result.code := getJSonInteger(responseJson,'code');
-                result.message := getJSonString(responseJson,'message');
         except
                 on le : EPopbillException do begin
                         if FIsThrowException then
                         begin
                                 raise EPopbillException.Create(le.code,le.Message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result.code := le.code;
+                                result.message := le.Message;
+                                exit;
                         end;
-
-                        result.code := le.code;
-                        result.message := le.Message;
                 end;
+        end;
+
+        if LastErrCode <> 0 then
+        begin
+                result.code := LastErrCode;
+                result.message := LastErrMessage;
+                exit;
+        end
+        else
+        begin
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+                exit;
         end;
 end;
 
@@ -1494,13 +1926,33 @@ var
 begin
         if MgtKey = '' then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
-                Exit;
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end
+                else
+                begin
+                        result := '';
+                        setLastErrCode(-99999999);
+                        setLastErrMessage('관리번호가 입력되지 않았습니다.');
+                        exit;
+                end;
         end;
-        
-        responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey +'?TG=POPUP',CorpNum,UserID);
 
-        result := getJSonString(responseJson,'url');
+        try
+                responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey +'?TG=POPUP',CorpNum,UserID);
+                result := getJSonString(responseJson,'url');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.message);
+                                exit;
+                        end;
+                end;
+
+        end;
 end;
 
 function TStatementService.GetPrintURL(CorpNum: string; ItemCode:Integer; MgtKey : String;UserID : String = '') : string;
@@ -1509,13 +1961,32 @@ var
 begin
         if MgtKey = '' then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
-                Exit;
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end
+                else
+                begin
+                        result := '';
+                        setLastErrCode(-99999999);
+                        setLastErrMessage('관리번호가 입력되지 않았습니다.');
+                        exit;
+                end;
         end;
-        
-        responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey +'?TG=PRINT',CorpNum,UserID);
 
-        result := getJSonString(responseJson,'url');
+        try
+                responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey +'?TG=PRINT',CorpNum,UserID);
+                result := getJSonString(responseJson,'url');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code, le.message);
+                                exit;
+                        end;
+                end;
+        end;
 end;
 
 function TStatementService.GetEPrintURL(CorpNum: string; ItemCode:Integer; MgtKey : String;UserID : String = '') : string;
@@ -1524,13 +1995,33 @@ var
 begin
         if MgtKey = '' then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
-                Exit;
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end
+                else
+                begin
+                        result := '';
+                        setLastErrCode(-99999999);
+                        setLastErrMessage('관리번호가 입력되지 않았습니다.');
+                        exit;
+                end;
         end;
-        
-        responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey +'?TG=EPRINT',CorpNum,UserID);
 
-        result := getJSonString(responseJson,'url');
+        try
+                responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey +'?TG=EPRINT',CorpNum,UserID);
+                result := getJSonString(responseJson,'url');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code, le.message);
+                                exit;
+                        end;
+                end;
+        end;
+
 end;
 
 function TStatementService.GetMassPrintURL(CorpNum: string; ItemCode:Integer; MgtKeyList: Array Of String; UserID: String = '') : string;
@@ -1540,8 +2031,18 @@ var
 begin
         if Length(MgtKeyList) = 0 then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
-                Exit;
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end
+                else
+                begin
+                        result := '';
+                        setLastErrCode(-99999999);
+                        setLastErrMessage('관리번호가 입력되지 않았습니다.');
+                        exit;
+                end;
         end;
 
         requestJson := '[';
@@ -1553,13 +2054,22 @@ begin
 
         requestJson := requestJson + ']';
 
-        responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '?Print',
+        try
+                responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '?Print',
                                 CorpNum,
                                 UserID,
                                 requestJson);
 
-        result := getJSonString(responseJson,'url');
-
+                result := getJSonString(responseJson,'url');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code, le.message);
+                                exit;
+                        end;
+                end;
+        end;
 end;
 
 function TStatementService.GetMailURL(CorpNum: string; ItemCode:Integer; MgtKey : String;UserID : String = '') : string;
@@ -1568,13 +2078,32 @@ var
 begin
         if MgtKey = '' then
         begin
-                raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
-                Exit;
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end
+                else
+                begin
+                        result := '';
+                        setLastErrCode(-99999999);
+                        setLastErrMessage('관리번호가 입력되지 않았습니다.');
+                        exit;
+                end;
         end;
-        
-        responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey +'?TG=MAIL',CorpNum,UserID);
 
-        result := getJSonString(responseJson,'url');
+        try
+                responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey +'?TG=MAIL',CorpNum,UserID);
+                result := getJSonString(responseJson,'url');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.message);
+                                exit;
+                        end;
+                end;
+        end;
 end;
 
 
@@ -1582,10 +2111,32 @@ function TStatementService.GetUnitCost(CorpNum : String;ItemCode:Integer) : Sing
 var
         responseJson : string;
 begin
-        responseJson := httpget('/Statement/'+IntToStr(ItemCode)+'?cfg=UNITCOST',CorpNum,'');
+        try
+                responseJson := httpget('/Statement/'+IntToStr(ItemCode)+'?cfg=UNITCOST',CorpNum,'');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result := 0.0;
+                                exit;
+                        end;
+                end;
+        end;
 
-        result := strToFloat(getJSonString( responseJson,'unitCost'));
 
+        if LastErrCode <> 0 then
+        begin
+                exit;
+        end
+        else
+        begin
+                result := strToFloat(getJSonString( responseJson,'unitCost'));
+        end;
 end;
 
 function TStatementService.AttachStatement(CorpNum : String; ItemCode:Integer; MgtKey:String; SubItemCode :Integer; SubMgtKey :String) : TResponse;
@@ -1599,18 +2150,31 @@ begin
 
                 responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey+'/AttachStmt',CorpNum,'',requestJson,'');
 
-                result.code := getJSonInteger(responseJson,'code');
-                result.message := getJSonString(responseJson,'message');
+
         except
                 on le : EPopbillException do begin
                         if FIsThrowException then
                         begin
                                 raise EPopbillException.Create(le.code,le.Message);
+                        end
+                        else
+                        begin
+                                result.code := le.code;
+                                result.message := le.Message;
+                                exit;
                         end;
-                        
-                        result.code := le.code;
-                        result.message := le.Message;
                 end;
+        end;
+
+        if LastErrCode <> 0 then
+        begin
+                result.code := LastErrCode;
+                result.message := LastErrMessage;
+        end
+        else
+        begin
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
         end;
 
 end;
@@ -1623,23 +2187,33 @@ begin
 
         try
                 requestJson := '{"ItemCode":"'+EscapeString(IntToSTr(SubItemCode))+'","MgtKey":"'+EscapeString(SubMgtKey)+'"}';
-
                 responseJson := httppost('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey+'/DetachStmt',CorpNum,'',requestJson,'');
-
-                result.code := getJSonInteger(responseJson,'code');
-                result.message := getJSonString(responseJson,'message');
         except
                 on le : EPopbillException do begin
                         if FIsThrowException then
                         begin
                                 raise EPopbillException.Create(le.code,le.Message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result.code := le.code;
+                                result.message := le.Message;
+                                exit;
                         end;
-                        
-                        result.code := le.code;
-                        result.message := le.Message;
                 end;
         end;
 
+        if LastErrCode <> 0 then
+        begin
+                result.code := LastErrCode;
+                result.message := LastErrMessage;
+        end
+        else
+        begin
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+        end;
 end;
 
 function TStatementService.ListEmailConfig(CorpNum, UserID: String): TEmailConfigList;
@@ -1648,22 +2222,39 @@ var
         jSons : ArrayOfString;
         i : integer;
 begin
-        responseJson := httpget('/Statement/EmailSendConfig',CorpNum,UserID);
-
         try
-                jSons := ParseJsonList(responseJson);
-                SetLength(result,Length(jSons));
-
-                for i := 0 to Length(jSons)-1 do
-                begin
-                        result[i] := TEmailConfig.Create;
-
-                        result[i].EmailType := getJSonString (jSons[i],'emailType');
-                        result[i].SendYN    := getJSonBoolean(jSons[i],'sendYN');
+                responseJson := httpget('/Statement/EmailSendConfig',CorpNum,UserID);
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code,le.message);
+                        end;
                 end;
-        except on E:Exception do
-                raise EPopbillException.Create(-99999999,'결과처리 실패.[Malformed Json]');
         end;
+
+        if LastErrCode <> 0 then
+        begin
+                exit;                                                                        
+        end
+        else
+        begin
+                try
+                        jSons := ParseJsonList(responseJson);
+                        SetLength(result,Length(jSons));
+
+                        for i := 0 to Length(jSons)-1 do
+                        begin
+                                result[i] := TEmailConfig.Create;
+                                result[i].EmailType := getJSonString (jSons[i],'emailType');
+                                result[i].SendYN    := getJSonBoolean(jSons[i],'sendYN');
+                        end;
+                except on E:Exception do
+                        raise EPopbillException.Create(-99999999,'결과처리 실패.[Malformed Json]');
+                end;
+        end;
+
+
 end;
 
 Function BoolToStr(b:Boolean):String;
@@ -1677,18 +2268,19 @@ var
         requestJson : string;
         responseJson : string;
 begin
-        if Trim(CorpNum) = '' then
-        begin
-                result.code := -99999999;
-                result.message := '연동회원 사업자번호가 입력되지 않았습니다.';
-                Exit;
-        end;
 
         if Trim(EmailType) = '' then
         begin
-                result.code := -99999999;
-                result.message := '메일전송유형이 입력되지 않았습니다.';
-                Exit;
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'메일전송유형이 입력되지 않았습니다.');
+                end
+                else
+                begin
+                        result.code := -99999999;
+                        result.message := '메일전송유형이 입력되지 않았습니다.';
+                        Exit;
+                end;
         end;
 
         try
@@ -1696,19 +2288,33 @@ begin
 
                 responseJson := httppost('/Statement/EmailSendConfig?EmailType=' + EmailType + '&SendYN=' + BoolToStr(SendYN),
                                         CorpNum,UserID,requestJson,'');
-
-                result.code := getJSonInteger(responseJson,'code');
-                result.message := getJSonString(responseJson,'message');
         except
                 on le : EPopbillException do begin
                         if FIsThrowException then
                         begin
                                 raise EPopbillException.Create(le.code,le.Message);
+                                exit;
+                        end
+                        else
+                        begin
+                                result.code := le.code;
+                                result.message := le.Message;
+                                exit;
                         end;
-
-                        result.code := le.code;
-                        result.message := le.Message;
                 end;
+        end;
+
+        if LastErrCode <> 0 then
+        begin
+                result.code := LastErrCode;
+                result.message := LastErrMessage;
+                exit;
+        end
+        else
+        begin
+                result.code := getJSonInteger(responseJson,'code');
+                result.message := getJSonString(responseJson,'message');
+                exit;
         end;
 end;
 
