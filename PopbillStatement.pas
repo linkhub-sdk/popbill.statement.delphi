@@ -10,7 +10,7 @@
 * Author : Kim Seongjun (pallet027@gmail.com)
 * Written : 2014-07-17
 * Contributor : Jeong Yohan(code@linkhub.co.kr)
-* Updated : 2019-03-19
+* Updated : 2019-05-03
 *
 * Thanks for your interest.
 *=================================================================================
@@ -208,6 +208,7 @@ type
                 
         public
                 constructor Create(LinkID : String; SecretKey : String);
+                
                 //팝필 거래명세서 연결 url.
                 function GetURL(CorpNum : String; UserID : String; TOGO : String) : String; overload;
 
@@ -241,21 +242,26 @@ type
 
                 //이메일재전송.
                 function SendEmail(CorpNum : String; ItemCode:Integer; MgtKey : String; Receiver:String; UserID : String = '') : TResponse;
+
                 //문자재전송.
                 function SendSMS(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; Contents : String; UserID : String = '') : TResponse;
+
                 // 팩스 재전송.
                 function SendFAX(CorpNum : String; ItemCode:Integer; MgtKey :String; Sender:String; Receiver:String; UserID : String = '') : TResponse;
+
                 // 팩스 사전 전송
                 function FAXSend(CorpNum : String; Statement : TStatement; sendNum : String; receiveNum : String; UserID : String = '') : String;
 
                 // 전자명세서 목록조회
                 function Search(CorpNum : String; DType:String; SDate:String; EDate:String; State:Array Of String; ItemCode:Array Of Integer; Page:Integer; PerPage: Integer; Order : String) : TStatementSearchList; overload;
+                
                 // 전자명세서 목록조회
                 function Search(CorpNum : String; DType:String; SDate:String; EDate:String; State:Array Of String; ItemCode:Array Of Integer; QString:String; Page:Integer; PerPage: Integer; Order : String) : TStatementSearchList; overload;
 
 
                 //전자명세서 요약정보 및 상태정보 확인.
                 function GetInfo(CorpNum : string; ItemCode:Integer; MgtKey: string) : TStatementInfo;
+                
                 //전자명세서 상세정보 확인
                 function GetDetailInfo(CorpNum : string; ItemCode:Integer; MgtKey: string) : TStatement;
 
