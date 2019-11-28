@@ -10,7 +10,7 @@
 * Author : Kim Seongjun (pallet027@gmail.com)
 * Written : 2014-07-17
 * Contributor : Jeong Yohan(code@linkhub.co.kr)
-* Updated : 2019-05-03
+* Updated : 2019-11-28
 *
 * Thanks for your interest.
 *=================================================================================
@@ -62,6 +62,7 @@ type
         TStatement = class
         public
                 itemCode             : Integer;
+                emailSubject         : string;
 
                 MgtKey               : string;
                 invoiceNum           : string;
@@ -222,7 +223,7 @@ type
                 function CheckMgtKeyInUse(CorpNum : String; ItemCode:Integer; MgtKey : String) : boolean;
 
                 //즉시발행 
-                function RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String = '') : TResponse;
+                function RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String = ''; EmailSubject : String = '') : TResponse;
 
                 //임시저장.
                 function Register(CorpNum : String; Statement : TStatement; UserID : String = '') : TResponse;
@@ -629,6 +630,9 @@ begin
         if receiveNum <> '' then
         requestJson := requestJson + '"receiveNum":"'+receiveNum+'",';
 
+        if EscapeString(Statement.EmailSubject) <> '' then
+        requestJson := requestJson + '"emailSubject":"'+EscapeString(Statement.EmailSubject) +'",';
+        
         requestJson := requestJson + '"memo":"'+ Memo +'",';
         requestJson := requestJson + '"itemCode":"'+ EscapeString(IntToStr(Statement.ItemCode)) +'",';
         requestJson := requestJson + '"mgtKey":"'+ EscapeString(Statement.MgtKey) +'",';
@@ -766,12 +770,17 @@ begin
         end;
 end;
 
-function TStatementService.RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String) : TResponse;
+function TStatementService.RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String = ''; EmailSubject : String = '') : TResponse;
 var
         requestJson : string;
         responseJson : string;
 begin
         try
+                if EmailSubject <> '' then
+                begin
+                        Statement.emailSubject := EmailSubject;
+                end;
+
                 requestJson := TStatementTojson(Statement, Memo,'','');
                 responseJson := httppost('/Statement',CorpNum,UserID,requestJson,'ISSUE');
         except
