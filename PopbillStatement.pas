@@ -48,6 +48,21 @@ type
                 spare3          : string;
                 spare4          : string;
                 spare5          : string;
+                spare6         : string;
+                spare7         : string;
+                spare8         : string;
+                spare9         : string;
+                spare10        : string;
+                spare11        : string;
+                spare12        : string;
+                spare13        : string;
+                spare14        : string;
+                spare15        : string;
+                spare16        : string;
+                spare17        : string;
+                spare18        : string;
+                spare19        : string;
+                spare20        : string;
         end;
         TDetailList     = Array of TStatementDetail;
 
@@ -712,7 +727,23 @@ begin
                         requestJson := requestJson + '"spare2":"' + EscapeString(Statement.detailList[i].spare2) + '",';
                         requestJson := requestJson + '"spare3":"' + EscapeString(Statement.detailList[i].spare3) + '",';
                         requestJson := requestJson + '"spare4":"' + EscapeString(Statement.detailList[i].spare4) + '",';
-                        requestJson := requestJson + '"spare5":"' + EscapeString(Statement.detailList[i].spare5) + '"';
+                        requestJson := requestJson + '"spare5":"' + EscapeString(Statement.detailList[i].spare5) + '",';
+                        requestJson := requestJson + '"spare6":"' + EscapeString(Statement.detailList[i].spare6) + '",';
+                        requestJson := requestJson + '"spare7":"' + EscapeString(Statement.detailList[i].spare7) + '",';
+                        requestJson := requestJson + '"spare8":"' + EscapeString(Statement.detailList[i].spare8) + '",';
+                        requestJson := requestJson + '"spare9":"' + EscapeString(Statement.detailList[i].spare9) + '",';
+                        requestJson := requestJson + '"spare10":"' + EscapeString(Statement.detailList[i].spare10) + '",';
+                        requestJson := requestJson + '"spare11":"' + EscapeString(Statement.detailList[i].spare11) + '",';
+                        requestJson := requestJson + '"spare12":"' + EscapeString(Statement.detailList[i].spare12) + '",';
+                        requestJson := requestJson + '"spare13":"' + EscapeString(Statement.detailList[i].spare13) + '",';
+                        requestJson := requestJson + '"spare14":"' + EscapeString(Statement.detailList[i].spare14) + '",';
+                        requestJson := requestJson + '"spare15":"' + EscapeString(Statement.detailList[i].spare15) + '",';
+                        requestJson := requestJson + '"spare16":"' + EscapeString(Statement.detailList[i].spare16) + '",';
+                        requestJson := requestJson + '"spare17":"' + EscapeString(Statement.detailList[i].spare17) + '",';
+                        requestJson := requestJson + '"spare18":"' + EscapeString(Statement.detailList[i].spare18) + '",';
+                        requestJson := requestJson + '"spare19":"' + EscapeString(Statement.detailList[i].spare19) + '",';
+                        requestJson := requestJson + '"spare20":"' + EscapeString(Statement.detailList[i].spare20) + '"';
+
                         requestJson := requestJson + '}';
                         if i < Length(Statement.detailList) - 1 then
                                  requestJson := requestJson + ',';
@@ -1323,8 +1354,21 @@ begin
                         result.detailList[i].spare3                := getJSonString(jSons[i],'spare3');
                         result.detailList[i].spare4                := getJSonString(jSons[i],'spare4');
                         result.detailList[i].spare5                := getJSonString(jSons[i],'spare5');
-
-
+                        result.detailList[i].spare6                := getJSonString(jSons[i],'spare6');
+                        result.detailList[i].spare7                := getJSonString(jSons[i],'spare7');
+                        result.detailList[i].spare8                := getJSonString(jSons[i],'spare8');
+                        result.detailList[i].spare9                := getJSonString(jSons[i],'spare9');
+                        result.detailList[i].spare10                := getJSonString(jSons[i],'spare10');
+                        result.detailList[i].spare11                := getJSonString(jSons[i],'spare11');
+                        result.detailList[i].spare12                := getJSonString(jSons[i],'spare12');
+                        result.detailList[i].spare13                := getJSonString(jSons[i],'spare13');
+                        result.detailList[i].spare14                := getJSonString(jSons[i],'spare14');
+                        result.detailList[i].spare15                := getJSonString(jSons[i],'spare15');
+                        result.detailList[i].spare16                := getJSonString(jSons[i],'spare16');
+                        result.detailList[i].spare17                := getJSonString(jSons[i],'spare17');
+                        result.detailList[i].spare18                := getJSonString(jSons[i],'spare18');
+                        result.detailList[i].spare19                := getJSonString(jSons[i],'spare19');
+                        result.detailList[i].spare20                := getJSonString(jSons[i],'spare20');
                 end;
 
         except on E:Exception do
