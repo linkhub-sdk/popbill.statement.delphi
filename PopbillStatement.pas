@@ -10,7 +10,7 @@
 * Author : Kim Seongjun (pallet027@gmail.com)
 * Written : 2014-07-17
 * Contributor : Jeong Yohan(code@linkhub.co.kr)
-* Updated : 2019-11-28
+* Updated : 2020-07-22
 *
 * Thanks for your interest.
 *=================================================================================
@@ -302,6 +302,8 @@ type
 
                 //인쇄URL
                 function GetPrintURL(CorpNum: string; ItemCode:Integer; MgtKey : String; UserID: String = '') : string;
+
+                function GetViewURL(CorpNum: string; ItemCode:Integer; MgtKey : String; UserID: String = '') : string;
 
                 //수신자인쇄URL
                 function GetEPrintURL(CorpNum: string; ItemCode:Integer; MgtKey : String; UserID: String = '') : string;
@@ -2011,6 +2013,40 @@ begin
                         end;
                 end;
 
+        end;
+end;
+
+function TStatementService.GetViewURL(CorpNum: string; ItemCode:Integer; MgtKey : String;UserID : String = '') : string;
+var
+        responseJson : String;
+begin
+        if MgtKey = '' then
+        begin
+                if FIsThrowException then
+                begin
+                        raise EPopbillException.Create(-99999999,'관리번호가 입력되지 않았습니다.');
+                        Exit;
+                end
+                else
+                begin
+                        result := '';
+                        setLastErrCode(-99999999);
+                        setLastErrMessage('관리번호가 입력되지 않았습니다.');
+                        exit;
+                end;
+        end;
+
+        try
+                responseJson := httpget('/Statement/'+ IntToStr(ItemCode) + '/'+MgtKey +'?TG=VIEW',CorpNum,UserID);
+                result := getJSonString(responseJson,'url');
+        except
+                on le : EPopbillException do begin
+                        if FIsThrowException then
+                        begin
+                                raise EPopbillException.Create(le.code, le.message);
+                                exit;
+                        end;
+                end;
         end;
 end;
 
