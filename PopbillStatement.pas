@@ -24,6 +24,13 @@ uses
         Popbill,
         Linkhub;
 type
+
+        TIssueResponse = Record
+                code : LongInt;
+                message : string;
+                invoiceNum : string;
+        end;
+        
         TStatementChargeInfo = class
         public
                 unitCost : string;
@@ -238,7 +245,7 @@ type
                 function CheckMgtKeyInUse(CorpNum : String; ItemCode:Integer; MgtKey : String) : boolean;
 
                 //즉시발행 
-                function RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String = ''; EmailSubject : String = '') : TResponse;
+                function RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String = ''; EmailSubject : String = '') : TIssueResponse;
 
                 //임시저장.
                 function Register(CorpNum : String; Statement : TStatement; UserID : String = '') : TResponse;
@@ -803,7 +810,7 @@ begin
         end;
 end;
 
-function TStatementService.RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String = ''; EmailSubject : String = '') : TResponse;
+function TStatementService.RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String = ''; EmailSubject : String = '') : TIssueResponse;
 var
         requestJson : string;
         responseJson : string;
@@ -840,6 +847,7 @@ begin
         begin
                 result.code := getJSonInteger(responseJson,'code');
                 result.message := getJSonString(responseJson,'message');
+                result.invoiceNum := getJSonString(responseJson,'invoiceNum');
         end;
 end;
 
