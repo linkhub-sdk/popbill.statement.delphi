@@ -25,7 +25,7 @@ uses
         Linkhub;
 type
 
-        TIssueResponse = Record
+        TSMTIssueResponse = Record
                 code : LongInt;
                 message : string;
                 invoiceNum : string;
@@ -245,7 +245,7 @@ type
                 function CheckMgtKeyInUse(CorpNum : String; ItemCode:Integer; MgtKey : String) : boolean;
 
                 //즉시발행 
-                function RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String = ''; EmailSubject : String = '') : TIssueResponse;
+                function RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String = ''; EmailSubject : String = '') : TSMTIssueResponse;
 
                 //임시저장.
                 function Register(CorpNum : String; Statement : TStatement; UserID : String = '') : TResponse;
@@ -810,7 +810,7 @@ begin
         end;
 end;
 
-function TStatementService.RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String = ''; EmailSubject : String = '') : TIssueResponse;
+function TStatementService.RegistIssue(CorpNum : String; Statement : TStatement; Memo : String; UserID : String = ''; EmailSubject : String = '') : TSMTIssueResponse;
 var
         requestJson : string;
         responseJson : string;
